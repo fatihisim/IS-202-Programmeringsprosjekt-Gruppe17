@@ -1,0 +1,80 @@
+@model IS202.NrlApp.Models.ObstacleData
+@{
+    ViewData["Title"] = "Report Obstacle";
+}
+
+<h2 class="mb-4">Report an Obstacle</h2>
+
+<div class="col-lg-6 mx-auto">
+<form asp-action="DataForm" method="post">
+
+    <div class="mb-3">
+        <label asp-for="ReporterName" class="form-label fw-semibold d-block"></label>
+        <input asp-for="ReporterName" class="form-control" />
+        <span asp-validation-for="ReporterName" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Organization" class="form-label fw-semibold d-block"></label>
+        <input asp-for="Organization" class="form-control" />
+        <span asp-validation-for="Organization" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ObstacleType" class="form-label fw-semibold d-block"></label>
+        <select asp-for="ObstacleType" class="form-select">
+            <option value="">-- Select Type --</option>
+            <option>Mast</option>
+            <option>Power line</option>
+            <option>Crane</option>
+        </select>
+        <span asp-validation-for="ObstacleType" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Comment" class="form-label fw-semibold d-block"></label>
+        <textarea asp-for="Comment" class="form-control" rows="3"></textarea>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Latitude" class="form-label fw-semibold d-block"></label>
+        <input asp-for="Latitude" id="Latitude" class="form-control" />
+        <span asp-validation-for="Latitude" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Longitude" class="form-label fw-semibold d-block"></label>
+        <input asp-for="Longitude" id="Longitude" class="form-control" />
+        <span asp-validation-for="Longitude" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <div id="map" style="height:360px;border:1px solid #ddd;border-radius:8px;"></div>
+        <small class="text-muted d-block mt-1">Click the map to fill Latitude/Longitude.</small>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const map = L.map('map').setView([58.146, 7.995], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let marker;
+        map.on('click', (e) => {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+            document.getElementById('Latitude').value = lat;
+            document.getElementById('Longitude').value = lng;
+            if (marker) marker.setLatLng([lat, lng]);
+            else marker = L.marker([lat, lng]).addTo(map);
+        });
+    </script>
+}
+

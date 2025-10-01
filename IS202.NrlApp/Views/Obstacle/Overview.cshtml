@@ -1,0 +1,17 @@
+@model IS202.NrlApp.Models.ObstacleData
+@{
+    ViewData["Title"] = "Obstacle Overview";
+}
+
+<h2>Submitted Obstacle Data</h2>
+<ul>
+    <li><strong>Reporter:</strong> @Model.ReporterName</li>
+    <li><strong>Organization:</strong> @Model.Organization</li>
+    <li><strong>Obstacle Type:</strong> @Model.ObstacleType</li>
+    <li><strong>Comment:</strong> @Model.Comment</li>
+    <li><strong>Latitude:</strong> @Model.Latitude</li>
+    <li><strong>Longitude:</strong> @Model.Longitude</li>
+</ul>
+
+<a asp-action="DataForm" asp-controller="Obstacle">Submit another obstacle</a>
+
