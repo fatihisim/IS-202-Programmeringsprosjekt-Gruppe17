@@ -1,17 +1,47 @@
+
 @model IS202.NrlApp.Models.ObstacleData
 @{
-    ViewData["Title"] = "Obstacle Overview";
+    ViewData["Title"] = "Overview";
 }
 
-<h2>Submitted Obstacle Data</h2>
-<ul>
-    <li><strong>Reporter:</strong> @Model.ReporterName</li>
-    <li><strong>Organization:</strong> @Model.Organization</li>
-    <li><strong>Obstacle Type:</strong> @Model.ObstacleType</li>
-    <li><strong>Comment:</strong> @Model.Comment</li>
-    <li><strong>Latitude:</strong> @Model.Latitude</li>
-    <li><strong>Longitude:</strong> @Model.Longitude</li>
-</ul>
+<h2>Overview</h2>
 
-<a asp-action="DataForm" asp-controller="Obstacle">Submit another obstacle</a>
+<div class="col-lg-8 mx-auto">
 
+    <dl class="row">
+        <dt class="col-sm-3">Reporter</dt>
+        <dd class="col-sm-9">@Model.ReporterName</dd>
+
+        <dt class="col-sm-3">Organization</dt>
+        <dd class="col-sm-9">@Model.Organization</dd>
+
+        <dt class="col-sm-3">Type</dt>
+        <dd class="col-sm-9">@Model.ObstacleType</dd>
+
+        <dt class="col-sm-3">Comment</dt>
+        <dd class="col-sm-9">@Model.Comment</dd>
+
+        <dt class="col-sm-3">Latitude</dt>
+        <dd class="col-sm-9">@Model.Latitude</dd>
+
+        <dt class="col-sm-3">Longitude</dt>
+        <dd class="col-sm-9">@Model.Longitude</dd>
+    </dl>
+
+    <div id="map-overview" style="height:360px;border:1px solid #ddd;border-radius:8px;"></div>
+</div>
+
+@section Scripts {
+    <script>
+        if (@Model.Latitude != 0 && @Model.Longitude != 0) {
+            const map = L.map('map-overview').setView([@Model.Latitude, @Model.Longitude], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            L.marker([@Model.Latitude, @Model.Longitude]).addTo(map)
+                .bindPopup("Obstacle here").openPopup();
+        }
+    </script>
+}
