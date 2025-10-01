@@ -1,0 +1,35 @@
+@model IEnumerable<IS202.NrlApp.Models.Obstacle>
+
+@{
+    ViewData["Title"] = "Obstacle List";
+}
+
+<h2>Obstacle List</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Reporter</th>
+            <th>Organization</th>
+            <th>Type</th>
+            <th>Comment</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.ReporterName</td>
+                <td>@item.Organization</td>
+                <td>@item.ObstacleType</td>
+                <td>@item.Comment</td>
+                <td>@item.Latitude</td>
+                <td>@item.Longitude</td>
+                <td>@item.CreatedAt</td>
+            </tr>
+        }
+    </tbody>
+</table>
