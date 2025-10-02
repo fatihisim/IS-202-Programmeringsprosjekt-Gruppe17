@@ -33,3 +33,39 @@
         }
     </tbody>
 </table>
+
+<h2 class="mt-5">Map View</h2>
+<div id="map" style="height: 400px; width: 100%; border:1px solid #ddd; border-radius:8px;"></div>
+
+@section Scripts {
+    <script>
+        // Initialize map (Kristiansand area)
+        const map = L.map('map').setView([58.1467, 7.9956], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const bounds = [];
+
+        @using System.Globalization
+        @foreach (var o in Model)
+        {
+            if (o.Latitude.HasValue && o.Longitude.HasValue)
+            {
+                var lat = o.Latitude.Value.ToString(CultureInfo.InvariantCulture);
+                var lng = o.Longitude.Value.ToString(CultureInfo.InvariantCulture);
+                var type = o.ObstacleType ?? "Obstacle";
+                var comment = o.Comment ?? "";
+
+                @:L.marker([@lat, @lng]).addTo(map).bindPopup("<b>@type</b><br/>@comment");
+                @:bounds.push([@lat, @lng]);
+            }
+        }
+
+        if (bounds.length) {
+            map.fitBounds(bounds, { padding: [30, 30] });
+        }
+    </script>
+}
+
