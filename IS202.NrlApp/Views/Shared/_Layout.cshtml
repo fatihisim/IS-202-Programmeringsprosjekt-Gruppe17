@@ -32,6 +32,12 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="Obstacle" asp-action="DataForm">Report</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="Obstacle" asp-action="List">Obstacles</a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -60,4 +66,3 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
-
