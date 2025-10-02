@@ -1,13 +1,16 @@
 @model IEnumerable<IS202.NrlApp.Models.Obstacle>
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Obstacle List";
 }
 
-<h2>Obstacle List</h2>
+<h2 class="mb-4">@ViewData["Title"]</h2>
 
-<table class="table table-striped">
-    <thead>
+<a asp-controller="Obstacle" asp-action="DataForm" class="btn btn-primary mb-3">New report</a>
+
+<table class="table table-bordered table-striped table-hover shadow-sm">
+    <thead class="table-dark">
         <tr>
             <th>Reporter</th>
             <th>Organization</th>
@@ -26,20 +29,20 @@
                 <td>@item.Organization</td>
                 <td>@item.ObstacleType</td>
                 <td>@item.Comment</td>
-                <td>@item.Latitude</td>
-                <td>@item.Longitude</td>
-                <td>@item.CreatedAt</td>
+                <td>@item.Latitude?.ToString("F5", CultureInfo.InvariantCulture)</td>
+                <td>@item.Longitude?.ToString("F5", CultureInfo.InvariantCulture)</td>
+                <td>@item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
             </tr>
         }
     </tbody>
 </table>
 
-<h2 class="mt-5">Map View</h2>
-<div id="map" style="height: 400px; width: 100%; border:1px solid #ddd; border-radius:8px;"></div>
+<h3 class="mt-5 mb-3">Map View</h3>
+<div id="map" style="height:400px;width:100%;border:1px solid #ddd;border-radius:8px;"></div>
 
 @section Scripts {
     <script>
-        // Initialize map (Kristiansand area)
+        // Initialize map
         const map = L.map('map').setView([58.1467, 7.9956], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -47,8 +50,6 @@
         }).addTo(map);
 
         const bounds = [];
-
-        @using System.Globalization
         @foreach (var o in Model)
         {
             if (o.Latitude.HasValue && o.Longitude.HasValue)
@@ -57,15 +58,16 @@
                 var lng = o.Longitude.Value.ToString(CultureInfo.InvariantCulture);
                 var type = o.ObstacleType ?? "Obstacle";
                 var comment = o.Comment ?? "";
+                var who = o.ReporterName ?? "";
+                var org = o.Organization ?? "";
 
-                @:L.marker([@lat, @lng]).addTo(map).bindPopup("<b>@type</b><br/>@comment");
+                @:L.marker([@lat, @lng]).addTo(map)
+                @:.bindPopup(`<b>@type</b><br/>@comment<br/><small>@who — @org</small>`);
                 @:bounds.push([@lat, @lng]);
             }
         }
-
         if (bounds.length) {
             map.fitBounds(bounds, { padding: [30, 30] });
         }
     </script>
 }
-
