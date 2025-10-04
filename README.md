@@ -38,6 +38,7 @@ cd IS202.NrlApp
 dotnet restore
 dotnet run
 
+
 Applikasjonen kjører deretter på:
 http://localhost:5048
 
@@ -55,13 +56,14 @@ http://localhost:8080
 
 Konfigurasjon
 
-Applikasjonen bruker SQLite som standard:
-"ConnectionStrings": {
-  "DefaultConnection": "Data Source=app.db"
+Applikasjonen bruker SQLite som standard
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=app.db"
+  }
 }
 
-For produksjon kan miljøvariabelen
-ConnectionStrings__DefaultConnection brukes til å definere ekstern database.
+For produksjon kan miljøvariabelen ConnectionStrings__DefaultConnection brukes til å definere ekstern database.
 
 ## Systemarkitektur
 
