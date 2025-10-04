@@ -40,10 +40,10 @@ dotnet run
 ```
 
 
-Applikasjonen kjører deretter på:
-http://localhost:5048
+Applikasjonen kjører deretter på:  
+👉 **http://localhost:5048**
 
-Databasen app.db opprettes automatisk første gang applikasjonen kjøres.
+Databasen `app.db` opprettes automatisk første gang applikasjonen kjøres.
 
 ### **Docker-kjøring**
 
