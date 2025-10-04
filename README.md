@@ -126,14 +126,14 @@ Fokuset var på **funksjonalitet, validering, og dataintegritet**.
 
 ### Testscenarier
 
-| Nr. | Scenario | Handling | Forventet resultat | Status |
-|-----|-----------|-----------|--------------------|--------|
-| 1 | Hente startsiden | Åpne `http://localhost:5048` | Nettsiden lastes uten feil
-| 2 | Opprette ny hindring | Fylle ut skjemaet og sende POST | Hindringen lagres og vises i oversikten 
-| 3 | Manglende obligatorisk felt | Sende skjema uten tittel | Valideringsfeil vises på skjermen 
-| 4 | Hente data fra kartet | Klikke på Leaflet-kartet | Koordinater fylles automatisk i skjemaet 
-| 5 | Vise oversiktsside | Navigere til “Hindringsliste” | Alle registrerte hindringer vises 
-| 6 | Kjøre applikasjonen i Docker | `docker build` og `docker run -p 8080:8080 nrl-app` | Applikasjonen tilgjengelig på `http://localhost:8080` 
+| Nr. | Scenario                    | Handling                                                          | Forventet resultat                                           | Status |
+|-----|-----------------------------|-------------------------------------------------------------------|--------------------------------------------------------------|--------|
+| 1   | Hente startsiden            | Åpne `http://localhost:5048`                                      | Nettsiden lastes uten feil                                   | ✅     |
+| 2   | Opprette ny hindring        | Fylle ut skjemaet og sende **POST**                               | Hindringen lagres og vises i oversikten                      | ✅     |
+| 3   | Manglende obligatorisk felt | Sende skjema uten tittel                                          | Valideringsfeil vises på skjermen                            | ✅     |
+| 4   | Hente data fra kartet       | Klikke på Leaflet-kartet                                          | Koordinater fylles automatisk i skjemaet                     | ✅     |
+| 5   | Vise oversiktsside          | Navigere til “Hindringsliste”                                     | Alle registrerte hindringer vises                            | ✅     |
+| 6   | Kjøre applikasjonen i Docker| `docker build` og `docker run -p 8080:8080 nrl-app`               | Applikasjonen tilgjengelig på `http://localhost:8080`        | ✅     |
 
 ### Resultat
 Alle testene ble **godkjent** uten feil.  
