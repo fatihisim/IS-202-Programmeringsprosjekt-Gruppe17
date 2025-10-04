@@ -49,7 +49,8 @@ Databasen app.db opprettes automatisk første gang applikasjonen kjøres.
 
 For å kjøre applikasjonen i container:
 
-```cd IS202.NrlApp
+```bash
+cd IS202.NrlApp
 docker build -t nrl-app .
 docker run -p 8080:8080 nrl-app
 ```
