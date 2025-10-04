@@ -55,8 +55,8 @@ docker build -t nrl-app .
 docker run -p 8080:8080 nrl-app
 ```
 
-Applikasjonen er da tilgjengelig på:
-http://localhost:8080
+Applikasjonen er da tilgjengelig på:  
+👉 **http://localhost:8080**
 
 ### **Konfigurasjon**
 
@@ -71,7 +71,8 @@ Applikasjonen bruker SQLite som standard:
 
 ```
 
-For produksjon kan miljøvariabelen ConnectionStrings__DefaultConnection brukes til å definere ekstern database.
+For produksjon kan miljøvariabelen  
+`ConnectionStrings__DefaultConnection` brukes til å definere ekstern database.
 
 ## Systemarkitektur
 
@@ -79,6 +80,7 @@ Applikasjonen er bygget med **ASP.NET Core MVC** og følger prinsippene for **Mo
 Løsningen består av tydelig adskilte lag for datahåndtering, forretningslogikk og presentasjon, og kjøres i et container-miljø via Docker.
 
 ### Oversikt
+
 ```
 ┌───────────────────────────────────────────────┐
 │ Brukergrensesnitt │
