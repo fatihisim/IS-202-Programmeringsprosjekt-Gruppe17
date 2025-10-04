@@ -79,7 +79,7 @@ Applikasjonen er bygget med **ASP.NET Core MVC** og følger prinsippene for **Mo
 Løsningen består av tydelig adskilte lag for datahåndtering, forretningslogikk og presentasjon, og kjøres i et container-miljø via Docker.
 
 ### Oversikt
-
+```
 ┌───────────────────────────────────────────────┐
 │ Brukergrensesnitt │
 │ (HTML, CSS, Bootstrap, Leaflet, Razor Views) │
@@ -104,6 +104,7 @@ GET/POST │ │ Dynamisk innhold
 │ Docker-miljø │
 │ (ASP.NET 9.0 image, EXPOSE 8080, app.db) │
 └───────────────────────────────────────────────┘
+```
 
 ### Forklaring
 - **View:** presenterer data og kartinformasjon ved bruk av **Razor Pages** og **Leaflet**.  
