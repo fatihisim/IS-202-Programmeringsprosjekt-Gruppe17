@@ -88,7 +88,7 @@ GET/POST │ │ Dynamisk innhold
 ▼ │
 ┌───────────────────────────────────────────────┐
 │ Controller-laget │
-│ (Håndterer forespørsler, validering, logikk)│
+│ (Håndterer forespørsler, validering, logikk) │
 └───────────────────────────────────────────────┘
 │
 ▼
@@ -103,7 +103,6 @@ GET/POST │ │ Dynamisk innhold
 │ Docker-miljø │
 │ (ASP.NET 9.0 image, EXPOSE 8080, app.db) │
 └───────────────────────────────────────────────┘
-
 
 ### Forklaring
 - **View:** presenterer data og kartinformasjon ved bruk av **Razor Pages** og **Leaflet**.  
