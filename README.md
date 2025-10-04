@@ -63,7 +63,17 @@ Applikasjonen bruker SQLite som standard
   "ConnectionStrings": {
     "DefaultConnection": "Data Source=app.db"
   }
+
+### Konfigurasjon
+Applikasjonen bruker **SQLite** som standard:
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=app.db"
+  }
 }
+
 ```
 
 For produksjon kan miljøvariabelen ConnectionStrings__DefaultConnection brukes til å definere ekstern database.
