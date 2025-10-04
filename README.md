@@ -36,7 +36,8 @@ For å starte applikasjonen lokalt:
 ```bash
 cd IS202.NrlApp
 dotnet restore
-dotnet run```
+dotnet run
+```
 
 
 Applikasjonen kjører deretter på:
@@ -49,7 +50,8 @@ Docker-kjøring
 For å kjøre applikasjonen i container:
 ```cd IS202.NrlApp
 docker build -t nrl-app .
-docker run -p 8080:8080 nrl-app```
+docker run -p 8080:8080 nrl-app
+```
 
 Applikasjonen er da tilgjengelig på:
 http://localhost:8080
@@ -61,7 +63,8 @@ Applikasjonen bruker SQLite som standard
   "ConnectionStrings": {
     "DefaultConnection": "Data Source=app.db"
   }
-}```
+}
+```
 
 For produksjon kan miljøvariabelen ConnectionStrings__DefaultConnection brukes til å definere ekstern database.
 
