@@ -3,66 +3,120 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - IS202.NrlApp</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] - NRL Obstacle Reporting System</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/IS202.NrlApp.styles.css" asp-append-version="true" />
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-          crossorigin="" />
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+
+    <style>
+        body {
+            background-color: #ffffff;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        .navbar {
+            background-color: #003366;
+        }
+
+        .navbar-brand {
+            color: #ffffff !important;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .nav-link {
+            color: #e6e6e6 !important;
+            transition: 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #4da3ff !important;
+        }
+
+        footer {
+            background-color: #f8f9fa;
+            border-top: 1px solid #e2e2e2;
+        }
+
+        footer p {
+            margin: 0;
+            padding: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .btn-primary {
+            background-color: #4da3ff;
+            border-color: #4da3ff;
+        }
+
+        .btn-primary:hover {
+            background-color: #368ce2;
+        }
+    </style>
 </head>
+
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">IS202.NrlApp</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-sm navbar-dark border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-airplane"></i> NRL Obstacle Reporting
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent" aria-expanded="false"
+                        aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-end">
+                    <ul class="navbar-nav">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house-door"></i> Home
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="DataForm">
+                                <i class="bi bi-flag-fill"></i> Report
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Obstacle" asp-action="DataForm">Report</a>
+                            <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="List">
+                                <i class="bi bi-list-task"></i> Obstacles
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Obstacle" asp-action="List">Obstacles</a>
+                            <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="Overview">
+                                <i class="bi bi-map"></i> Map
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Privacy">
+                                <i class="bi bi-lock"></i> Privacy
+                            </a>
                         </li>
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+
+    <div class="container pb-3">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - IS202.NrlApp - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
+    <footer class="text-center">
+        <p>© 2025 NRL Obstacle Reporting System – Group 17 | University of Agder</p>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-            crossorigin=""></script>
-
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

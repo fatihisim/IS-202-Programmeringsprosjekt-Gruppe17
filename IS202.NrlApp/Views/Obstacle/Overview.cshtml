@@ -1,47 +1,143 @@
-
-@model IS202.NrlApp.Models.ObstacleData
+@model IEnumerable<IS202.NrlApp.Models.Obstacle>
+@using System.Text.Json
 @{
-    ViewData["Title"] = "Overview";
+    ViewData["Title"] = "Map Overview";
 }
 
-<h2>Overview</h2>
+<!-- 
+    Denne siden viser et fullskjerms kart over alle registrerte hinder.
+    Kode-kommentarer er på norsk (iht. kurskrav), men all synlig UI-tekst er ENGELSK.
+-->
 
-<div class="col-lg-8 mx-auto">
+<div class="container my-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h2 class="mb-0"><i class="bi bi-map me-2"></i>Map Overview</h2>
 
-    <dl class="row">
-        <dt class="col-sm-3">Reporter</dt>
-        <dd class="col-sm-9">@Model.ReporterName</dd>
+        <div class="d-flex flex-wrap gap-2">
+            <!-- Filter for type -->
+            <select id="typeFilter" class="form-select form-select-sm" style="min-width:180px;">
+                <option value="">All types</option>
+                <option>Crane</option>
+                <option>Mast</option>
+                <option>Power line</option>
+                <option>Tower</option>
+                <option>Building</option>
+                <option>Other</option>
+            </select>
 
-        <dt class="col-sm-3">Organization</dt>
-        <dd class="col-sm-9">@Model.Organization</dd>
+            <!-- Tekstsøk -->
+            <input id="searchInput" class="form-control form-control-sm"
+                   placeholder="Search (reporter, org, type, comment)" style="min-width:280px;" />
 
-        <dt class="col-sm-3">Type</dt>
-        <dd class="col-sm-9">@Model.ObstacleType</dd>
+            <!-- Ny innmelding -->
+            <a asp-controller="Obstacle" asp-action="DataForm" class="btn btn-primary btn-sm">
+                <i class="bi bi-flag-fill me-1"></i> New report
+            </a>
+        </div>
+    </div>
 
-        <dt class="col-sm-3">Comment</dt>
-        <dd class="col-sm-9">@Model.Comment</dd>
-
-        <dt class="col-sm-3">Latitude</dt>
-        <dd class="col-sm-9">@Model.Latitude</dd>
-
-        <dt class="col-sm-3">Longitude</dt>
-        <dd class="col-sm-9">@Model.Longitude</dd>
-    </dl>
-
-    <div id="map-overview" style="height:360px;border:1px solid #ddd;border-radius:8px;"></div>
+    <!-- Kartkort -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div id="overviewMap" style="height: 520px;"></div>
+        </div>
+        <div class="card-footer d-flex justify-content-between small text-muted">
+            <span id="visibleCount"></span>
+            <span>Tip: Click a marker to see details.</span>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
+    <!-- Leaflet fra CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <script>
-        if (@Model.Latitude != 0 && @Model.Longitude != 0) {
-            const map = L.map('map-overview').setView([@Model.Latitude, @Model.Longitude], 13);
+        (function () {
+            // Henter alle hinder som enkel, lett JSON-struktur
+            const obstacles = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.Select(m => new {
+                    m.ReporterName, m.Organization, m.ObstacleType, m.Comment,
+                    Lat = m.Latitude, Lon = m.Longitude, Created = m.CreatedAt
+                })
+            ));
+
+            // Init kart (standard Kristiansand)
+            const map = L.map('overviewMap').setView([58.146, 7.995], 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap'
+                maxZoom: 19, attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            L.marker([@Model.Latitude, @Model.Longitude]).addTo(map)
-                .bindPopup("Obstacle here").openPopup();
-        }
+            // Bedre UX: unngå utilsiktet zoom ved scroll
+            map.scrollWheelZoom.disable();
+            map.on('focus', () => map.scrollWheelZoom.enable());
+            map.on('blur',  () => map.scrollWheelZoom.disable());
+
+            // Markører og lag
+            const allMarkers = [];
+            const layerGroup = L.layerGroup().addTo(map);
+
+            // Enkel merkelapp i popup
+            function badge(type) {
+                return `<span class="badge bg-secondary">${type || 'Obstacle'}</span>`;
+            }
+
+            // Popup-innhold (ENGELSK)
+            function makePopup(o) {
+                const created = o.Created ? new Date(o.Created).toLocaleString() : '';
+                return `
+                    <div style="min-width:220px">
+                        <div class="mb-1">${badge(o.ObstacleType)}</div>
+                        <strong>${o.ReporterName ?? ''}</strong> – ${o.Organization ?? ''}<br/>
+                        <em>${o.Comment ?? ''}</em><br/>
+                        <small>Lat: ${Number(o.Lat).toFixed(6)}, Lon: ${Number(o.Lon).toFixed(6)}</small><br/>
+                        <small class="text-muted">${created}</small>
+                    </div>`;
+            }
+
+            // Tegner markører basert på filter/søk
+            function rebuildMarkers(filterType, q) {
+                layerGroup.clearLayers();
+                allMarkers.length = 0;
+
+                const query = (q || '').toLowerCase();
+                const filtered = obstacles.filter(o => {
+                    const typeOk = !filterType || (o.ObstacleType || '').toLowerCase() === filterType.toLowerCase();
+                    const text = [o.ReporterName, o.Organization, o.ObstacleType, o.Comment]
+                        .filter(Boolean).join(' ').toLowerCase();
+                    return typeOk && (!query || text.includes(query));
+                });
+
+                filtered.forEach(o => {
+                    if (o.Lat != null && o.Lon != null) {
+                        const m = L.marker([o.Lat, o.Lon]).addTo(layerGroup);
+                        m.bindPopup(makePopup(o));
+                        allMarkers.push(m);
+                    }
+                });
+
+                if (allMarkers.length > 0) {
+                    const group = L.featureGroup(allMarkers);
+                    map.fitBounds(group.getBounds().pad(0.2));
+                }
+
+                // Teller (ENGELSK)
+                document.getElementById('visibleCount').textContent =
+                    `${filtered.length} obstacle(s) visible`;
+            }
+
+            // Førstegenerering
+            rebuildMarkers('', '');
+
+            // UI-hendelser
+            const typeSel = document.getElementById('typeFilter');
+            const searchInput = document.getElementById('searchInput');
+            function applyFilters() { rebuildMarkers(typeSel.value, searchInput.value); }
+            typeSel.addEventListener('change', applyFilters);
+            searchInput.addEventListener('input', applyFilters);
+        })();
     </script>
 }

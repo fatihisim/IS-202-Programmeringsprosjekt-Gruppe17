@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using IS202.NrlApp.Models;
+using IS202.NrlApp.Data;
 
 namespace IS202.NrlApp.Controllers
 {
@@ -10,20 +12,28 @@ namespace IS202.NrlApp.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly AppDbContext _context;
 
         /// <summary>
-        /// Konstruktør som mottar logger for å logge hendelser og feil.
+        /// Konstruktør som mottar logger og databasekontekst.
         /// </summary>
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         /// <summary>
-        /// Viser startsiden (Index).
+        /// Viser startsiden (Index) med dynamisk antall hindre.
         /// </summary>
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            // Norsk kommentar: Teller antall hindringer (obstacles) i databasen.
+            int obstacleCount = await _context.Obstacles.CountAsync();
+
+            // Norsk kommentar: Sender antallet til View via ViewBag.
+            ViewBag.ObstacleCount = obstacleCount;
+
             return View();
         }
 
@@ -41,9 +51,9 @@ namespace IS202.NrlApp.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel 
-            { 
-                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier 
+            return View(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
             });
         }
     }

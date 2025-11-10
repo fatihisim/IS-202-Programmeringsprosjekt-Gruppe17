@@ -1,73 +1,141 @@
 @model IEnumerable<IS202.NrlApp.Models.Obstacle>
-@using System.Globalization
-
+@using System.Text.Json
 @{
     ViewData["Title"] = "Obstacle List";
 }
 
-<h2 class="mb-4">@ViewData["Title"]</h2>
+<div class="container my-4">
+    <!-- Header + actions -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0"><i class="bi bi-list-task me-2"></i>Obstacle List</h2>
 
-<a asp-controller="Obstacle" asp-action="DataForm" class="btn btn-primary mb-3">New report</a>
+        <div class="d-flex gap-2">
+            <input id="filterInput" class="form-control form-control-sm"
+                   placeholder="Search (reporter, org, type, comment)" style="min-width:280px;" />
+            <a asp-controller="Obstacle" asp-action="DataForm" class="btn btn-primary">
+                <i class="bi bi-flag-fill me-1"></i> New report
+            </a>
+        </div>
+    </div>
 
-<table class="table table-bordered table-striped table-hover shadow-sm">
-    <thead class="table-dark">
-        <tr>
-            <th>Reporter</th>
-            <th>Organization</th>
-            <th>Type</th>
-            <th>Comment</th>
-            <th>Latitude</th>
-            <th>Longitude</th>
-            <th>Created</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.ReporterName</td>
-                <td>@item.Organization</td>
-                <td>@item.ObstacleType</td>
-                <td>@item.Comment</td>
-                <td>@item.Latitude?.ToString("F5", CultureInfo.InvariantCulture)</td>
-                <td>@item.Longitude?.ToString("F5", CultureInfo.InvariantCulture)</td>
-                <td>@item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <!-- Table -->
+    <div class="card shadow-sm mb-4">
+        <div class="table-responsive">
+            <table id="obstacleTable" class="table table-striped align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Reporter</th>
+                        <th>Organization</th>
+                        <th>Type</th>
+                        <th>Comment</th>
+                        <th class="text-end">Latitude</th>
+                        <th class="text-end">Longitude</th>
+                        <th class="text-nowrap">Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var o in Model)
+                {
+                    var lat = o.Latitude?.ToString("F6");
+                    var lon = o.Longitude?.ToString("F6");
+                    <tr data-lat="@lat" data-lon="@lon">
+                        <td>@o.ReporterName</td>
+                        <td>@o.Organization</td>
+                        <td><span class="badge bg-secondary">@o.ObstacleType</span></td>
+                        <td>@o.Comment</td>
+                        <td class="text-end">@lat</td>
+                        <td class="text-end">@lon</td>
+                        <td>@o.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-<h3 class="mt-5 mb-3">Map View</h3>
-<div id="map" style="height:400px;width:100%;border:1px solid #ddd;border-radius:8px;"></div>
+    <!-- Map -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <i class="bi bi-map me-2"></i>Map Overview
+        </div>
+        <div class="card-body p-0">
+            <div id="listMap" style="height: 460px;"></div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <script>
-        // Initialize map
-        const map = L.map('map').setView([58.1467, 7.9956], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        // ---- Client-side filter for the table
+        (function () {
+            const input = document.getElementById('filterInput');
+            const rows = Array.from(document.querySelectorAll('#obstacleTable tbody tr'));
+            input.addEventListener('input', () => {
+                const q = input.value.toLowerCase();
+                rows.forEach(tr => {
+                    const text = tr.innerText.toLowerCase();
+                    tr.style.display = text.includes(q) ? '' : 'none';
+                });
+            });
+        })();
 
-        const bounds = [];
-        @foreach (var o in Model)
-        {
-            if (o.Latitude.HasValue && o.Longitude.HasValue)
-            {
-                var lat = o.Latitude.Value.ToString(CultureInfo.InvariantCulture);
-                var lng = o.Longitude.Value.ToString(CultureInfo.InvariantCulture);
-                var type = o.ObstacleType ?? "Obstacle";
-                var comment = o.Comment ?? "";
-                var who = o.ReporterName ?? "";
-                var org = o.Organization ?? "";
+        // ---- Leaflet map + row interactions
+        (function () {
+            const obstacles = @Html.Raw(JsonSerializer.Serialize(
+                Model.Select(m => new {
+                    m.ReporterName, m.Organization, m.ObstacleType, m.Comment,
+                    Lat = m.Latitude, Lon = m.Longitude
+                })
+            ));
 
-                @:L.marker([@lat, @lng]).addTo(map)
-                @:.bindPopup(`<b>@type</b><br/>@comment<br/><small>@who — @org</small>`);
-                @:bounds.push([@lat, @lng]);
+            const map = L.map('listMap').setView([58.146, 7.995], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19, attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            const markers = [];
+            const markerByKey = {};
+
+            obstacles.forEach(o => {
+                if (o.Lat != null && o.Lon != null) {
+                    const m = L.marker([o.Lat, o.Lon]).addTo(map);
+                    m.bindPopup(
+                        `<strong>${o.ObstacleType ?? 'Obstacle'}</strong><br/>
+                         ${o.ReporterName ?? ''} – ${o.Organization ?? ''}<br/>
+                         <em>${o.Comment ?? ''}</em>`
+                    );
+                    markers.push(m);
+                    const key = `${Number(o.Lat).toFixed(6)},${Number(o.Lon).toFixed(6)}`;
+                    markerByKey[key] = m;
+                }
+            });
+
+            if (markers.length > 0) {
+                const group = L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.2));
             }
-        }
-        if (bounds.length) {
-            map.fitBounds(bounds, { padding: [30, 30] });
-        }
+
+            // Table row -> marker focus
+            document.querySelectorAll('#obstacleTable tbody tr').forEach(tr => {
+                const lat = tr.dataset.lat, lon = tr.dataset.lon;
+                if (!lat || !lon) return;
+                const key = `${lat},${lon}`;
+                const m = markerByKey[key];
+                if (!m) return;
+
+                tr.addEventListener('mouseenter', () => m.openPopup());
+                tr.addEventListener('mouseleave', () => m.closePopup());
+                tr.addEventListener('click', () => {
+                    const pos = m.getLatLng();
+                    map.setView(pos, Math.max(map.getZoom(), 14), { animate: true });
+                    m.openPopup();
+                });
+            });
+        })();
     </script>
 }

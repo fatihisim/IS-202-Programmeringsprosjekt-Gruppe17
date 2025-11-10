@@ -1,8 +1,63 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
+    // Norsk kommentar: Denne siden viser hero/CTA + en liten status-oversikt.
+    // Obstacle-tallet hentes dynamisk via ViewBag.ObstacleCount (settes i HomeController.Index).
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mt-5">
+    <!-- Norsk kommentar: Logo kan fjernes hvis ikke finnes i /wwwroot/images -->
+
+    <h1 class="display-5 fw-bold text-primary">Report aviation obstacles quickly and safely</h1>
+    <p class="lead text-muted mb-4">
+        Help maintain Norwegian airspace safety by submitting obstacle reports directly from the field.
+    </p>
+
+    <a class="btn btn-primary btn-lg mb-5" asp-controller="Obstacle" asp-action="DataForm">
+        <i class="bi bi-flag-fill me-2"></i> Report an Obstacle
+    </a>
+</div>
+
+<!-- Quick overview statistics -->
+<div class="container text-center mt-5">
+    <h3 class="mb-4 fw-semibold">System overview</h3>
+
+    <div class="row g-4 justify-content-center">
+
+        <!-- Total reports (dynamisk) -->
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <i class="bi bi-flag-fill text-primary display-6 mb-2"></i>
+                    <h4 class="fw-bold">@ViewBag.ObstacleCount</h4>
+                    <p class="text-muted mb-0">Total obstacles reported</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Verified reports (placeholder – kan kobles til DB senere) -->
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <i class="bi bi-shield-check text-success display-6 mb-2"></i>
+                    <h4 class="fw-bold">—</h4>
+                    <p class="text-muted mb-0">Verified by NRL officers (coming soon)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Last update (server-tidspunkt) -->
+        <div class="col-12 col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <i class="bi bi-clock-history text-warning display-6 mb-2"></i>
+                    <h4 class="fw-bold">@DateTime.Now.ToString("HH:mm")</h4>
+                    <p class="text-muted mb-0">Last system update</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-4">
+        Live data from NRL Obstacle Reporting System – updated automatically.
+    </p>
 </div>

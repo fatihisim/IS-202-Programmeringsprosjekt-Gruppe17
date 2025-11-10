@@ -1,82 +1,86 @@
+using System;
+using System.Linq;
+using Microsoft.AspNetCore.Mvc;
 using IS202.NrlApp.Data;
 using IS202.NrlApp.Models;
-using Microsoft.AspNetCore.Mvc;
 
 namespace IS202.NrlApp.Controllers
 {
-    /// <summary>
-    /// Controller som håndterer opprettelse, visning og lagring av hindringsdata.
-    /// </summary>
     public class ObstacleController : Controller
     {
         private readonly AppDbContext _db;
 
-        /// <summary>
-        /// Konstruktør som initialiserer databasekonteksten.
-        /// </summary>
-        public ObstacleController(AppDbContext db)
-        {
-            _db = db;
-        }
+        // Konstruktør – får tilgang til databasen via dependency injection
+        public ObstacleController(AppDbContext db) => _db = db;
 
-        /// <summary>
-        /// Viser skjemaet for å registrere ny hindring (GET).
-        /// </summary>
-        [HttpGet]
-        public IActionResult DataForm()
-        {
-            return View(new ObstacleData());
-        }
-
-        /// <summary>
-        /// Behandler innsending av skjema (POST). Validerer og lagrer data.
-        /// </summary>
-        [HttpPost]
-        public IActionResult DataForm(ObstacleData model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            // Map ViewModel -> Entity
-            var entity = new Obstacle
-            {
-                ReporterName = model.ReporterName,
-                Organization = model.Organization,
-                ObstacleType = model.ObstacleType,
-                Comment = model.Comment,
-                Latitude = model.Latitude,
-                Longitude = model.Longitude
-            };
-
-            _db.Obstacles.Add(entity);
-            _db.SaveChanges();
-
-            // Etter lagring vises oversiktssiden
-            return RedirectToAction(nameof(Overview), model);
-        }
-
-        /// <summary>
-        /// Viser oversiktsside med informasjon om rapportert hindring.
-        /// </summary>
-        [HttpGet]
-        public IActionResult Overview(ObstacleData model)
-        {
-            return View(model);
-        }
-
-        /// <summary>
-        /// Viser liste over alle registrerte hindringer fra databasen.
-        /// </summary>
+        // GET: /Obstacle/List
+        // Viser tabell med alle registrerte hinder + innebygd kart på samme side
         [HttpGet]
         public IActionResult List()
         {
+            // Henter alle hinder fra databasen (nyeste først)
             var items = _db.Obstacles
                 .OrderByDescending(o => o.CreatedAt)
                 .ToList();
 
             return View(items);
+        }
+
+        // GET: /Obstacle/DataForm
+        // Viser registreringsskjemaet
+        [HttpGet]
+        public IActionResult DataForm()
+        {
+            // Tom visningsmodell til skjemaet
+            return View(new ObstacleData());
+        }
+
+        // POST: /Obstacle/DataForm
+        // Mottar innsending fra skjemaet (PRG-mønster brukes: Post → Redirect → Get)
+        // [ValidateAntiForgeryToken] beskytter mot CSRF-angrep
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DataForm([Bind("ReporterName,Organization,ObstacleType,Comment,Latitude,Longitude")] ObstacleData model)
+        {
+            // Hvis valideringen feiler, vis skjemaet på nytt med feilmeldinger
+            if (!ModelState.IsValid)
+                return View(model);
+
+            // Mapper fra skjema-modell (ViewModel) til database-entitet (Domain Model)
+            var entity = new Obstacle
+            {
+                ReporterName = model.ReporterName,
+                Organization = model.Organization,
+                ObstacleType = model.ObstacleType,
+                Comment     = model.Comment,
+                Latitude    = model.Latitude,
+                Longitude   = model.Longitude,
+                CreatedAt   = DateTime.Now   // lagrer tidspunkt for innmelding
+            };
+
+            // Lagrer i databasen
+            _db.Obstacles.Add(entity);
+            _db.SaveChanges();
+
+            // Viser grønn "suksess"-melding etter redirect
+            TempData["Success"] = "Obstacle successfully registered.";
+
+            // Redirect til liste (unngår dobbelt-post ved refresh)
+            return RedirectToAction(nameof(List));
+        }
+
+        // GET: /Obstacle/Overview
+        // Egen fullskjerms kartside (filtre + søk). Returnerer alle hinder som modell.
+        // Brukes hvis man ønsker en dedikert kartvisning i tillegg til tabell-siden.
+        [HttpGet]
+        public IActionResult Overview()
+        {
+            var data = _db.Obstacles
+                .OrderByDescending(o => o.CreatedAt)
+                .ToList();
+
+            // View: Views/Obstacle/Overview.cshtml (forventer IEnumerable<Obstacle>)
+            return View(data);
         }
     }
 }

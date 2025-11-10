@@ -1,80 +1,216 @@
 @model IS202.NrlApp.Models.ObstacleData
 @{
-    ViewData["Title"] = "Report Obstacle";
+    ViewData["Title"] = "Report an Obstacle";
 }
 
-<h2 class="mb-4">Report an Obstacle</h2>
-
-<div class="col-lg-6 mx-auto">
-<form asp-action="DataForm" method="post">
-
-    <div class="mb-3">
-        <label asp-for="ReporterName" class="form-label fw-semibold d-block"></label>
-        <input asp-for="ReporterName" class="form-control" />
-        <span asp-validation-for="ReporterName" class="text-danger small"></span>
+<div class="container my-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h2 class="mb-0">
+            <i class="bi bi-flag-fill me-2"></i>Report an Obstacle
+        </h2>
+        <a asp-controller="Obstacle" asp-action="List" class="btn btn-outline-secondary">
+            <i class="bi bi-list-task me-1"></i> Back to List
+        </a>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Organization" class="form-label fw-semibold d-block"></label>
-        <input asp-for="Organization" class="form-control" />
-        <span asp-validation-for="Organization" class="text-danger small"></span>
-    </div>
+    @* Success feedback (TempData) *@
+    @if (TempData["Success"] is string s && !string.IsNullOrWhiteSpace(s))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@s
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-    <div class="mb-3">
-        <label asp-for="ObstacleType" class="form-label fw-semibold d-block"></label>
-        <select asp-for="ObstacleType" class="form-select">
-            <option value="">-- Select Type --</option>
-            <option>Mast</option>
-            <option>Power line</option>
-            <option>Crane</option>
-        </select>
-        <span asp-validation-for="ObstacleType" class="text-danger small"></span>
-    </div>
+    @* Validation summary *@
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert" style="display:none"></div>
 
-    <div class="mb-3">
-        <label asp-for="Comment" class="form-label fw-semibold d-block"></label>
-        <textarea asp-for="Comment" class="form-control" rows="3"></textarea>
-    </div>
+    <div class="row g-4">
+        <!-- Form column -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="DataForm" method="post" novalidate>
+                        @Html.AntiForgeryToken()
 
-    <div class="mb-3">
-        <label asp-for="Latitude" class="form-label fw-semibold d-block"></label>
-        <input asp-for="Latitude" id="Latitude" class="form-control" />
-        <span asp-validation-for="Latitude" class="text-danger small"></span>
-    </div>
+                        <div class="mb-3">
+                            <label asp-for="ReporterName" class="form-label">
+                                Reporter name <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="ReporterName" class="form-control" placeholder="e.g., Ola Nordmann" required />
+                            <span asp-validation-for="ReporterName" class="text-danger"></span>
+                        </div>
 
-    <div class="mb-3">
-        <label asp-for="Longitude" class="form-label fw-semibold d-block"></label>
-        <input asp-for="Longitude" id="Longitude" class="form-control" />
-        <span asp-validation-for="Longitude" class="text-danger small"></span>
-    </div>
+                        <div class="mb-3">
+                            <label asp-for="Organization" class="form-label">
+                                Organization <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Organization" class="form-control" placeholder="e.g., Skanska / UiA / Luftforsvaret" required />
+                            <span asp-validation-for="Organization" class="text-danger"></span>
+                        </div>
 
-    <div class="mb-3">
-        <div id="map" style="height:360px;border:1px solid #ddd;border-radius:8px;"></div>
-        <small class="text-muted d-block mt-1">Click the map to fill Latitude/Longitude.</small>
-    </div>
+                        <div class="mb-3">
+                            <label asp-for="ObstacleType" class="form-label">
+                                Obstacle type <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="ObstacleType" class="form-select" required>
+                                <option value="">-- Select type --</option>
+                                <option>Crane</option>
+                                <option>Mast</option>
+                                <option>Power line</option>
+                                <option>Tower</option>
+                                <option>Building</option>
+                                <option>Other</option>
+                            </select>
+                            <span asp-validation-for="ObstacleType" class="text-danger"></span>
+                        </div>
 
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+                        <div class="mb-3">
+                            <label asp-for="Comment" class="form-label">Comment (optional)</label>
+                            <textarea asp-for="Comment" class="form-control" rows="3" placeholder="Short description, height if known, nearby reference..."></textarea>
+                            <span asp-validation-for="Comment" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 col-sm-6 mb-3">
+                                <label asp-for="Latitude" class="form-label">Latitude</label>
+                                <input asp-for="Latitude" class="form-control" placeholder="Click the map to fill" />
+                                <span asp-validation-for="Latitude" class="text-danger"></span>
+                            </div>
+                            <div class="col-12 col-sm-6 mb-3">
+                                <label asp-for="Longitude" class="form-label">Longitude</label>
+                                <input asp-for="Longitude" class="form-control" placeholder="Click the map to fill" />
+                                <span asp-validation-for="Longitude" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- New: quick geolocation helpers -->
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button" id="geoBtn" class="btn btn-outline-primary">
+                                <i class="bi bi-geo-alt-fill me-1"></i> Use my location
+                            </button>
+                            <button type="button" id="clearPointBtn" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i> Clear marker
+                            </button>
+                        </div>
+
+                        <div class="d-grid d-sm-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send-fill me-1"></i> Submit
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="bi bi-eraser me-1"></i> Clear
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <small class="text-muted d-block mt-2">
+                Tip: Click the map to auto-fill latitude/longitude. Drag marker to fine-tune position.
+            </small>
+        </div>
+
+        <!-- Map column -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <i class="bi bi-map me-2"></i>Map
+                </div>
+                <div class="card-body p-0">
+                    <div id="reportMap" style="height: 460px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        const map = L.map('map').setView([58.146, 7.995], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
 
-        let marker;
-        map.on('click', (e) => {
-            const lat = e.latlng.lat.toFixed(6);
-            const lng = e.latlng.lng.toFixed(6);
-            document.getElementById('Latitude').value = lat;
-            document.getElementById('Longitude').value = lng;
-            if (marker) marker.setLatLng([lat, lng]);
-            else marker = L.marker([lat, lng]).addTo(map);
-        });
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        (function () {
+            // Elements
+            const latInput = document.getElementById("Latitude");
+            const lonInput = document.getElementById("Longitude");
+            const geoBtn = document.getElementById("geoBtn");
+            const clearBtn = document.getElementById("clearPointBtn");
+
+            // Init map (centered near Kristiansand as default)
+            const map = L.map('reportMap').setView([58.146, 7.995], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            // Optional: prevent accidental wheel zoom while scrolling the page
+            map.scrollWheelZoom.disable();
+            map.on('focus', () => map.scrollWheelZoom.enable());
+            map.on('blur',  () => map.scrollWheelZoom.disable());
+
+            // Marker state
+            let marker = null;
+
+            // Helper: set marker + inputs
+            function setPoint(lat, lon) {
+                if (!marker) {
+                    marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+                    marker.on('dragend', () => {
+                        const { lat, lng } = marker.getLatLng();
+                        latInput.value = lat.toFixed(6);
+                        lonInput.value = lng.toFixed(6);
+                    });
+                } else {
+                    marker.setLatLng([lat, lon]);
+                }
+                latInput.value = lat.toFixed(6);
+                lonInput.value = lon.toFixed(6);
+            }
+
+            // Click to set location
+            map.on('click', (e) => {
+                setPoint(e.latlng.lat, e.latlng.lng);
+            });
+
+            // Geolocation button
+            geoBtn?.addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by your browser.');
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        const { latitude, longitude } = pos.coords;
+                        setPoint(latitude, longitude);
+                        map.setView([latitude, longitude], 15);
+                    },
+                    err => alert('Could not get location: ' + err.message),
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            });
+
+            // Clear marker button
+            clearBtn?.addEventListener('click', () => {
+                if (marker) { map.removeLayer(marker); marker = null; }
+                latInput.value = '';
+                lonInput.value = '';
+            });
+
+            // If inputs already have values (edit scenario), show marker
+            const initLat = parseFloat(latInput.value);
+            const initLon = parseFloat(lonInput.value);
+            if (!isNaN(initLat) && !isNaN(initLon)) {
+                setPoint(initLat, initLon);
+                map.setView([initLat, initLon], 14);
+            }
+
+            // Show validation summary only if there are errors
+            const vs = document.querySelector('[asp-validation-summary="ModelOnly"]');
+            if (vs && vs.innerText.trim().length > 0) vs.style.display = 'block';
+        })();
     </script>
 }
-
