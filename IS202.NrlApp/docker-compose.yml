@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  # 🇳🇴 Denne tjenesten kjører MariaDB-databasen.
+  mariadb:
+    image: mariadb:latest                   # Bruker den nyeste MariaDB-versjonen
+    container_name: is202nrlapp-mariadb-1   # Navn på containeren
+    restart: always                         # Starter automatisk hvis den stopper
+    environment:
+      MYSQL_ROOT_PASSWORD: example           # Rotpassord for databasen
+      MYSQL_DATABASE: nrlappdb               # Navn på databasen
+      MYSQL_USER: root                       # Brukernavn
+      MYSQL_PASSWORD: example                # Passord
+    ports:
+      - "3307:3306"                          # Eksponerer port 3306 på port 3307 lokalt
+    volumes:
+      - mariadb_data:/var/lib/mysql          # Lagrer databasefiler permanent
+
+  # 🇳🇴 Denne tjenesten kjører ASP.NET Core web-applikasjonen.
+  web:
+    build: .                                 # Bygger fra Dockerfile i prosjektmappen
+    container_name: is202nrlapp-web-1        # Navn på web-containeren
+    depends_on:
+      - mariadb                              # Starter først MariaDB
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development   # Kjører i utviklingsmodus
+      - ConnectionStrings__DefaultConnection=server=mariadb;database=nrlappdb;user=root;password=example;
+    ports:
+      - "8080:8080"                          # Gjør applikasjonen tilgjengelig på http://localhost:8080
+
+# 🇳🇴 Volumet som brukes for å lagre databasefiler
+volumes:
+  mariadb_data:
