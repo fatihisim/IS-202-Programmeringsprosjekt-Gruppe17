@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using IS202.NrlApp.Data;
 using IS202.NrlApp.Models;
@@ -10,15 +12,12 @@ namespace IS202.NrlApp.Controllers
     {
         private readonly AppDbContext _db;
 
-        // Konstruktør – får tilgang til databasen via dependency injection
         public ObstacleController(AppDbContext db) => _db = db;
 
-        // GET: /Obstacle/List
-        // Viser tabell med alle registrerte hinder + innebygd kart på samme side
+        // Viser alle hindringer (tilgjengelig for alle)
         [HttpGet]
         public IActionResult List()
         {
-            // Henter alle hinder fra databasen (nyeste først)
             var items = _db.Obstacles
                 .OrderByDescending(o => o.CreatedAt)
                 .ToList();
@@ -26,52 +25,52 @@ namespace IS202.NrlApp.Controllers
             return View(items);
         }
 
-        // GET: /Obstacle/DataForm
-        // Viser registreringsskjemaet
+        // Viser rapporterings-skjema (krever innlogging)
         [HttpGet]
+        [Authorize]
         public IActionResult DataForm()
         {
-            // Tom visningsmodell til skjemaet
             return View(new ObstacleData());
         }
 
-        // POST: /Obstacle/DataForm
-        // Mottar innsending fra skjemaet (PRG-mønster brukes: Post → Redirect → Get)
-        // [ValidateAntiForgeryToken] beskytter mot CSRF-angrep
+        // Mottar rapport fra bruker (krever innlogging)
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
-        public IActionResult DataForm([Bind("ReporterName,Organization,ObstacleType,Comment,Latitude,Longitude")] ObstacleData model)
+        public IActionResult DataForm([Bind("ObstacleType,Comment,Latitude,Longitude,GeometryType,GeoJsonData")] ObstacleData model)
         {
-            // Hvis valideringen feiler, vis skjemaet på nytt med feilmeldinger
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Mapper fra skjema-modell (ViewModel) til database-entitet (Domain Model)
+            // Henter bruker-informasjon automatisk
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userName = User.Identity?.Name ?? "Unknown User";
+            var organization = User.FindFirstValue("Organization") ?? "Not specified";
+
             var entity = new Obstacle
             {
-                ReporterName = model.ReporterName,
-                Organization = model.Organization,
+                ReporterName = userName,
+                Organization = organization,
                 ObstacleType = model.ObstacleType,
-                Comment     = model.Comment,
-                Latitude    = model.Latitude,
-                Longitude   = model.Longitude,
-                CreatedAt   = DateTime.Now   // lagrer tidspunkt for innmelding
+                Comment      = model.Comment,
+                Latitude     = model.Latitude,
+                Longitude    = model.Longitude,
+                GeometryType = model.GeometryType,
+                GeoJsonData  = model.GeoJsonData,
+                UserId       = userId,
+                Status       = "Pending",
+                CreatedAt    = DateTime.UtcNow
             };
 
-            // Lagrer i databasen
             _db.Obstacles.Add(entity);
             _db.SaveChanges();
 
-            // Viser grønn "suksess"-melding etter redirect
-            TempData["Success"] = "Obstacle successfully registered.";
+            TempData["Success"] = "Obstacle successfully registered and awaiting review.";
 
-            // Redirect til liste (unngår dobbelt-post ved refresh)
             return RedirectToAction(nameof(List));
         }
 
-        // GET: /Obstacle/Overview
-        // Egen fullskjerms kartside (filtre + søk). Returnerer alle hinder som modell.
-        // Brukes hvis man ønsker en dedikert kartvisning i tillegg til tabell-siden.
+        // Fullskjerm kartvisning
         [HttpGet]
         public IActionResult Overview()
         {
@@ -79,7 +78,6 @@ namespace IS202.NrlApp.Controllers
                 .OrderByDescending(o => o.CreatedAt)
                 .ToList();
 
-            // View: Views/Obstacle/Overview.cshtml (forventer IEnumerable<Obstacle>)
             return View(data);
         }
     }

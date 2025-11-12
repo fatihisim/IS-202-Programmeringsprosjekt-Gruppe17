@@ -1,30 +1,30 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using IS202.NrlApp.Models;
 
 namespace IS202.NrlApp.Data
 {
-    // Denne klassen representerer databasen for applikasjonen
-    // og brukes til å kommunisere med MariaDB gjennom Entity Framework Core.
-    public class AppDbContext : DbContext
+    // AppDbContext utvider IdentityDbContext for å inkludere brukere, roller og autentisering.
+    public class AppDbContext : IdentityDbContext
     {
-        // Konstruktør som mottar databasekonfigurasjon fra appsettings.json
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        // Konstruktør som sender opsjoner til basisklassen (IdentityDbContext)
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
         {
         }
 
-        // Tabell (database-sett) for hinder (Obstacle)
-        // Dette gjør at vi kan hente, legge til, endre og slette hinderdata
+        // DbSet for applikasjonens domene-modeller (for eksempel hinder på kartet)
         public DbSet<Obstacle> Obstacles { get; set; }
 
-        // Denne metoden brukes til å konfigurere hvordan databasen skal opprettes
+        // DbSet for registrerte brukere i systemet
+        public DbSet<User> Users { get; set; }
+
+        // Metode for å konfigurere databasen og relasjonene
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Eksempel: sørger for at ID alltid blir generert automatisk
-            modelBuilder.Entity<Obstacle>()
-                .Property(o => o.Id)
-                .ValueGeneratedOnAdd();
+            // Her kan man legge til spesielle konfigurasjoner eller standarddata senere.
         }
     }
 }

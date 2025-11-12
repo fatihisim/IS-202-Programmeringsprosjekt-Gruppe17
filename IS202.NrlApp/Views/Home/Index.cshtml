@@ -1,63 +1,143 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
-    // Norsk kommentar: Denne siden viser hero/CTA + en liten status-oversikt.
-    // Obstacle-tallet hentes dynamisk via ViewBag.ObstacleCount (settes i HomeController.Index).
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center mt-5">
-    <!-- Norsk kommentar: Logo kan fjernes hvis ikke finnes i /wwwroot/images -->
+<div class="container mt-5 text-center" style="max-width: 900px;">
 
-    <h1 class="display-5 fw-bold text-primary">Report aviation obstacles quickly and safely</h1>
-    <p class="lead text-muted mb-4">
-        Help maintain Norwegian airspace safety by submitting obstacle reports directly from the field.
-    </p>
+    <!-- Success mesajları -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-    <a class="btn btn-primary btn-lg mb-5" asp-controller="Obstacle" asp-action="DataForm">
-        <i class="bi bi-flag-fill me-2"></i> Report an Obstacle
-    </a>
+    <!-- Error mesajları -->
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <!-- Vises når brukeren er logget inn -->
+        <h3 class="fw-semibold mb-3 text-success">Welcome back, @User.Identity.Name 👋</h3>
+        <p class="text-muted mb-4">
+            You are now logged in to the <strong>NRL Obstacle Reporting System</strong>.  
+            Use the button below to create, view, or manage obstacle reports.
+        </p>
+
+        <!-- Knapp for å opprette en ny hindringsrapport -->
+        <a class="btn btn-success btn-lg px-5 py-3 mb-3 shadow-sm" asp-controller="Obstacle" asp-action="DataForm">
+            Report an Obstacle
+        </a>
+
+        <!-- Logg ut knapp (må bruke form for POST) -->
+        <div class="mt-4">
+            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger px-4">Log out</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <!-- Hovedvisning for brukere som ikke er logget inn -->
+        <h2 class="fw-bold mb-3" style="font-size: 1.7rem;">Report aviation obstacles quickly and safely</h2>
+        <p class="text-muted mb-5" style="font-size: 0.95rem;">
+            Help maintain Norwegian airspace safety by submitting obstacle reports directly from the field.
+        </p>
+
+        <!-- Innloggingsskjema -->
+        <div class="card shadow-sm mx-auto text-start p-4 border-0" style="max-width: 400px;">
+            <h5 class="text-center mb-3 text-success fw-semibold">Log in to your account</h5>
+
+            <!-- Skjema for innlogging -->
+            <form asp-controller="Account" asp-action="Login" method="post">
+                @Html.AntiForgeryToken()
+                <div class="mb-3">
+                    <label for="Email" class="form-label fw-medium small">Email address</label>
+                    <input type="email" class="form-control form-control-sm" id="Email" name="Email" required placeholder="Enter your email address" />
+                </div>
+                <div class="mb-3">
+                    <label for="Password" class="form-label fw-medium small">Password</label>
+                    <input type="password" class="form-control form-control-sm" id="Password" name="Password" required placeholder="Enter your password" />
+                </div>
+
+                <!-- Remember me checkbox -->
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="RememberMe" name="RememberMe" value="true" />
+                    <label class="form-check-label small" for="RememberMe">
+                        Remember me
+                    </label>
+                </div>
+
+                <!-- Logg inn knapp -->
+                <button type="submit" class="btn btn-success w-100 mt-3 py-2 shadow-sm">Log In</button>
+            </form>
+
+            <!-- Lenke til registrering -->
+            <div class="text-center mt-4">
+                <p class="mb-1 text-muted small">Don't have an account?</p>
+                <a class="btn btn-outline-secondary w-100 py-2 fw-semibold register-btn"
+                   asp-controller="Account" asp-action="Register">Create an account</a>
+            </div>
+        </div>
+
+        <!-- Informasjonsseksjon nederst på siden -->
+        <div class="row mt-5 text-start text-muted" style="font-size: 0.9rem;">
+            <div class="col-md-4 mb-4">
+                <h6 class="text-dark mb-2">
+                    <i class="bi bi-geo-alt-fill text-primary me-2"></i> Smart Reporting
+                </h6>
+                <p>Submit accurate obstacle data using location-enabled tools that simplify field reporting.</p>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <h6 class="text-dark mb-2">
+                    <i class="bi bi-cloud-upload-fill text-info me-2"></i> Real-Time Updates
+                </h6>
+                <p>Ensure obstacle entries are synchronized instantly and accessible to NRL officers.</p>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <h6 class="text-dark mb-2">
+                    <i class="bi bi-shield-lock-fill text-success me-2"></i> Secure Access
+                </h6>
+                <p>All actions are encrypted and restricted to verified users for maximum data protection.</p>
+            </div>
+        </div>
+    }
 </div>
 
-<!-- Quick overview statistics -->
-<div class="container text-center mt-5">
-    <h3 class="mb-4 fw-semibold">System overview</h3>
+<!-- Stilinnstillinger -->
+<style>
+    .register-btn:hover {
+        background-color: #6c757d !important;
+        color: white !important;
+        border-color: #6c757d !important;
+        transition: all 0.2s ease-in-out;
+    }
 
-    <div class="row g-4 justify-content-center">
+    .form-control-sm {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+    }
 
-        <!-- Total reports (dynamisk) -->
-        <div class="col-12 col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <i class="bi bi-flag-fill text-primary display-6 mb-2"></i>
-                    <h4 class="fw-bold">@ViewBag.ObstacleCount</h4>
-                    <p class="text-muted mb-0">Total obstacles reported</p>
-                </div>
-            </div>
-        </div>
+    .btn {
+        font-size: 0.95rem;
+    }
 
-        <!-- Verified reports (placeholder – kan kobles til DB senere) -->
-        <div class="col-12 col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <i class="bi bi-shield-check text-success display-6 mb-2"></i>
-                    <h4 class="fw-bold">—</h4>
-                    <p class="text-muted mb-0">Verified by NRL officers (coming soon)</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Last update (server-tidspunkt) -->
-        <div class="col-12 col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <i class="bi bi-clock-history text-warning display-6 mb-2"></i>
-                    <h4 class="fw-bold">@DateTime.Now.ToString("HH:mm")</h4>
-                    <p class="text-muted mb-0">Last system update</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <p class="text-muted small mt-4">
-        Live data from NRL Obstacle Reporting System – updated automatically.
-    </p>
-</div>
+    @@media (max-width: 576px) {
+        h2 {
+            font-size: 1.4rem !important;
+        }
+        .card {
+            padding: 1.5rem !important;
+        }
+    }
+</style>

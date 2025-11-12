@@ -13,6 +13,21 @@
         </a>
     </div>
 
+    @* Bruker-informasjon kort *@
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <div>
+                <strong>Reporting as:</strong> @User.Identity.Name
+                @if (User.HasClaim(c => c.Type == "Organization"))
+                {
+                    <span class="text-muted">(@User.FindFirst("Organization")?.Value)</span>
+                }
+            </div>
+        </div>
+    }
+
     @* Success feedback (TempData) *@
     @if (TempData["Success"] is string s && !string.IsNullOrWhiteSpace(s))
     {
@@ -34,22 +49,6 @@
                         @Html.AntiForgeryToken()
 
                         <div class="mb-3">
-                            <label asp-for="ReporterName" class="form-label">
-                                Reporter name <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="ReporterName" class="form-control" placeholder="e.g., Ola Nordmann" required />
-                            <span asp-validation-for="ReporterName" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Organization" class="form-label">
-                                Organization <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Organization" class="form-control" placeholder="e.g., Skanska / UiA / Luftforsvaret" required />
-                            <span asp-validation-for="Organization" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
                             <label asp-for="ObstacleType" class="form-label">
                                 Obstacle type <span class="text-danger">*</span>
                             </label>
@@ -67,24 +66,28 @@
 
                         <div class="mb-3">
                             <label asp-for="Comment" class="form-label">Comment (optional)</label>
-                            <textarea asp-for="Comment" class="form-control" rows="3" placeholder="Short description, height if known, nearby reference..."></textarea>
+                            <textarea asp-for="Comment" class="form-control" rows="3" 
+                                      placeholder="Short description, height if known, nearby reference..."></textarea>
                             <span asp-validation-for="Comment" class="text-danger"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-12 col-sm-6 mb-3">
                                 <label asp-for="Latitude" class="form-label">Latitude</label>
-                                <input asp-for="Latitude" class="form-control" placeholder="Click the map to fill" />
+                                <input asp-for="Latitude" class="form-control" placeholder="Click the map" readonly />
                                 <span asp-validation-for="Latitude" class="text-danger"></span>
                             </div>
                             <div class="col-12 col-sm-6 mb-3">
                                 <label asp-for="Longitude" class="form-label">Longitude</label>
-                                <input asp-for="Longitude" class="form-control" placeholder="Click the map to fill" />
+                                <input asp-for="Longitude" class="form-control" placeholder="Click the map" readonly />
                                 <span asp-validation-for="Longitude" class="text-danger"></span>
                             </div>
                         </div>
 
-                        <!-- New: quick geolocation helpers -->
+                        <!-- Hidden fields -->
+                        <input type="hidden" asp-for="GeometryType" />
+                        <input type="hidden" asp-for="GeoJsonData" />
+
                         <div class="d-flex gap-2 mb-3">
                             <button type="button" id="geoBtn" class="btn btn-outline-primary">
                                 <i class="bi bi-geo-alt-fill me-1"></i> Use my location
@@ -96,17 +99,17 @@
 
                         <div class="d-grid d-sm-flex gap-2">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-send-fill me-1"></i> Submit
+                                <i class="bi bi-send-fill me-1"></i> Submit Report
                             </button>
                             <button type="reset" class="btn btn-outline-secondary">
-                                <i class="bi bi-eraser me-1"></i> Clear
+                                <i class="bi bi-eraser me-1"></i> Clear Form
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
             <small class="text-muted d-block mt-2">
-                Tip: Click the map to auto-fill latitude/longitude. Drag marker to fine-tune position.
+                <i class="bi bi-lightbulb"></i> Click on the map to mark the obstacle location. You can drag the marker to fine-tune the position.
             </small>
         </div>
 
@@ -117,7 +120,7 @@
                     <i class="bi bi-map me-2"></i>Map
                 </div>
                 <div class="card-body p-0">
-                    <div id="reportMap" style="height: 460px;"></div>
+                    <div id="reportMap" style="height: 500px;"></div>
                 </div>
             </div>
         </div>
@@ -134,49 +137,58 @@
 
     <script>
         (function () {
-            // Elements
             const latInput = document.getElementById("Latitude");
             const lonInput = document.getElementById("Longitude");
+            const geoJsonInput = document.getElementById("GeoJsonData");
             const geoBtn = document.getElementById("geoBtn");
             const clearBtn = document.getElementById("clearPointBtn");
 
-            // Init map (centered near Kristiansand as default)
+            // Initialiserer kart (sentrert rundt Kristiansand)
             const map = L.map('reportMap').setView([58.146, 7.995], 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            // Optional: prevent accidental wheel zoom while scrolling the page
+            // Forhindrer utilsiktet zoom ved scrolling
             map.scrollWheelZoom.disable();
             map.on('focus', () => map.scrollWheelZoom.enable());
             map.on('blur',  () => map.scrollWheelZoom.disable());
 
-            // Marker state
             let marker = null;
 
-            // Helper: set marker + inputs
+            // Setter markør og oppdaterer input-felt
             function setPoint(lat, lon) {
                 if (!marker) {
                     marker = L.marker([lat, lon], { draggable: true }).addTo(map);
                     marker.on('dragend', () => {
                         const { lat, lng } = marker.getLatLng();
-                        latInput.value = lat.toFixed(6);
-                        lonInput.value = lng.toFixed(6);
+                        updatePoint(lat, lng);
                     });
                 } else {
                     marker.setLatLng([lat, lon]);
                 }
-                latInput.value = lat.toFixed(6);
-                lonInput.value = lon.toFixed(6);
+                updatePoint(lat, lon);
             }
 
-            // Click to set location
+            // Oppdaterer koordinater og GeoJSON
+            function updatePoint(lat, lon) {
+                latInput.value = lat.toFixed(6);
+                lonInput.value = lon.toFixed(6);
+                
+                // Genererer GeoJSON for punktet
+                geoJsonInput.value = JSON.stringify({
+                    type: "Point",
+                    coordinates: [parseFloat(lon.toFixed(6)), parseFloat(lat.toFixed(6))]
+                });
+            }
+
+            // Klikk på kartet for å sette posisjon
             map.on('click', (e) => {
                 setPoint(e.latlng.lat, e.latlng.lng);
             });
 
-            // Geolocation button
+            // "Use my location" knapp
             geoBtn?.addEventListener('click', () => {
                 if (!navigator.geolocation) {
                     alert('Geolocation is not supported by your browser.');
@@ -193,22 +205,18 @@
                 );
             });
 
-            // Clear marker button
+            // "Clear marker" knapp
             clearBtn?.addEventListener('click', () => {
-                if (marker) { map.removeLayer(marker); marker = null; }
+                if (marker) { 
+                    map.removeLayer(marker); 
+                    marker = null; 
+                }
                 latInput.value = '';
                 lonInput.value = '';
+                geoJsonInput.value = '';
             });
 
-            // If inputs already have values (edit scenario), show marker
-            const initLat = parseFloat(latInput.value);
-            const initLon = parseFloat(lonInput.value);
-            if (!isNaN(initLat) && !isNaN(initLon)) {
-                setPoint(initLat, initLon);
-                map.setView([initLat, initLon], 14);
-            }
-
-            // Show validation summary only if there are errors
+            // Viser validation summary bare hvis det er feil
             const vs = document.querySelector('[asp-validation-summary="ModelOnly"]');
             if (vs && vs.innerText.trim().length > 0) vs.style.display = 'block';
         })();
