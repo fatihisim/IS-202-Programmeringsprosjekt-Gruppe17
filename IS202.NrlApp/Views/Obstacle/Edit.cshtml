@@ -1,49 +1,23 @@
 @model IS202.NrlApp.Models.ObstacleData
 @{
-    ViewData["Title"] = "Report an Obstacle";
+    ViewData["Title"] = "Edit Report";
+    var obstacleId = ViewBag.ObstacleId;
 }
 
 <div class="container my-4">
     <div class="mb-4">
         <h2 class="mb-0">
-            <i class="bi bi-geo-alt-fill me-2 text-success"></i>Report an Obstacle
+            <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Report #@obstacleId
         </h2>
-        <p class="text-muted mb-0">Submit a new obstacle report to NRL</p>
+        <p class="text-muted mb-0">Update the obstacle details below</p>
     </div>
-
-    @* Bruker-informasjon kort *@
-    @if (User.Identity?.IsAuthenticated == true)
-    {
-        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            <div>
-                <strong>Reporting as:</strong> @User.Identity.Name
-                @if (User.HasClaim(c => c.Type == "Organization"))
-                {
-                    <span class="text-muted">(@User.FindFirst("Organization")?.Value)</span>
-                }
-            </div>
-        </div>
-    }
-
-    @* Success feedback (TempData) *@
-    @if (TempData["Success"] is string s && !string.IsNullOrWhiteSpace(s))
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle me-2"></i>@s
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @* Validation summary *@
-    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert" style="display:none"></div>
 
     <div class="row g-4">
         <!-- Form column -->
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <form asp-action="DataForm" method="post" novalidate>
+                    <form asp-action="Edit" asp-route-id="@obstacleId" method="post" novalidate>
                         @Html.AntiForgeryToken()
 
                         <div class="mb-3">
@@ -71,12 +45,12 @@
 
                         <div class="row">
                             <div class="col-12 col-sm-6 mb-3">
-                                <label asp-for="Latitude" class="form-label">Latitude</label>
+                                <label asp-for="Latitude" class="form-label">Latitude <span class="text-danger">*</span></label>
                                 <input asp-for="Latitude" class="form-control" placeholder="Click the map" readonly />
                                 <span asp-validation-for="Latitude" class="text-danger"></span>
                             </div>
                             <div class="col-12 col-sm-6 mb-3">
-                                <label asp-for="Longitude" class="form-label">Longitude</label>
+                                <label asp-for="Longitude" class="form-label">Longitude <span class="text-danger">*</span></label>
                                 <input asp-for="Longitude" class="form-control" placeholder="Click the map" readonly />
                                 <span asp-validation-for="Longitude" class="text-danger"></span>
                             </div>
@@ -95,29 +69,38 @@
                             </button>
                         </div>
 
-                        <div class="d-grid">
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Note:</strong> After updating, the report status will remain unchanged. 
+                            NRL Officers will review any modifications.
+                        </div>
+
+                        <div class="d-grid d-sm-flex gap-2">
                             <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-send-fill me-1"></i> Submit Report
+                                <i class="bi bi-check-circle me-1"></i> Save Changes
                             </button>
+                            <a asp-action="MyReports" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-x-circle me-1"></i> Cancel
+                            </a>
                         </div>
                     </form>
                 </div>
             </div>
-            <small class="text-muted d-block mt-2">
-                <i class="bi bi-lightbulb"></i> Click on the map to mark the obstacle location. You can drag the marker to fine-tune the position.
-            </small>
         </div>
 
         <!-- Map column -->
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
-                    <i class="bi bi-map me-2"></i>Map
+                    <i class="bi bi-map me-2"></i>Location
                 </div>
                 <div class="card-body p-0">
-                    <div id="reportMap" style="height: 500px;"></div>
+                    <div id="editMap" style="height: 500px;"></div>
                 </div>
             </div>
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-lightbulb"></i> Click on the map to update the location. You can drag the marker to fine-tune the position.
+            </small>
         </div>
     </div>
 </div>
@@ -138,21 +121,34 @@
             const geoBtn = document.getElementById("geoBtn");
             const clearBtn = document.getElementById("clearPointBtn");
 
-            // Initialiserer kart (sentrert rundt Kristiansand)
-            const map = L.map('reportMap').setView([58.146, 7.995], 12);
+            // Get initial values
+            const initialLat = parseFloat(latInput.value) || 58.146;
+            const initialLon = parseFloat(lonInput.value) || 7.995;
+
+            // Initialize map centered on existing location
+            const map = L.map('editMap').setView([initialLat, initialLon], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            // Forhindrer utilsiktet zoom ved scrolling
+            // Disable scroll wheel zoom by default
             map.scrollWheelZoom.disable();
             map.on('focus', () => map.scrollWheelZoom.enable());
             map.on('blur',  () => map.scrollWheelZoom.disable());
 
             let marker = null;
 
-            // Setter markør og oppdaterer input-felt
+            // Create initial marker if coordinates exist
+            if (latInput.value && lonInput.value) {
+                marker = L.marker([initialLat, initialLon], { draggable: true }).addTo(map);
+                marker.on('dragend', () => {
+                    const { lat, lng } = marker.getLatLng();
+                    updatePoint(lat, lng);
+                });
+            }
+
+            // Set marker and update inputs
             function setPoint(lat, lon) {
                 if (!marker) {
                     marker = L.marker([lat, lon], { draggable: true }).addTo(map);
@@ -166,24 +162,24 @@
                 updatePoint(lat, lon);
             }
 
-            // Oppdaterer koordinater og GeoJSON
+            // Update coordinates and GeoJSON
             function updatePoint(lat, lon) {
                 latInput.value = lat.toFixed(6);
                 lonInput.value = lon.toFixed(6);
                 
-                // Genererer GeoJSON for punktet
+                // Generate GeoJSON
                 geoJsonInput.value = JSON.stringify({
                     type: "Point",
                     coordinates: [parseFloat(lon.toFixed(6)), parseFloat(lat.toFixed(6))]
                 });
             }
 
-            // Klikk på kartet for å sette posisjon
+            // Click on map to set position
             map.on('click', (e) => {
                 setPoint(e.latlng.lat, e.latlng.lng);
             });
 
-            // "Use my location" knapp
+            // "Use my location" button
             geoBtn?.addEventListener('click', () => {
                 if (!navigator.geolocation) {
                     alert('Geolocation is not supported by your browser.');
@@ -200,7 +196,7 @@
                 );
             });
 
-            // "Clear marker" knapp
+            // "Clear marker" button
             clearBtn?.addEventListener('click', () => {
                 if (marker) { 
                     map.removeLayer(marker); 
@@ -211,7 +207,7 @@
                 geoJsonInput.value = '';
             });
 
-            // Viser validation summary bare hvis det er feil
+            // Show validation summary only if there are errors
             const vs = document.querySelector('[asp-validation-summary="ModelOnly"]');
             if (vs && vs.innerText.trim().length > 0) vs.style.display = 'block';
         })();

@@ -17,7 +17,7 @@ namespace IS202.NrlApp.Controllers
             _signInManager = signInManager;
         }
 
-        // Yönlendirer til startsiden hvor login-skjemaet finnes
+        // til startsiden hvor login-skjemaet finnes
         [HttpGet]
         public IActionResult Login()
         {

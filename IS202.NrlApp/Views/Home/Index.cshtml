@@ -1,114 +1,176 @@
-﻿@{
+@using System.Security.Claims
+@{
     ViewData["Title"] = "Home";
+    
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    var userRole = User.FindFirst("Role")?.Value;
+    var isPilot = userRole == "Pilot" || string.IsNullOrEmpty(userRole);
+    var isRegisterforer = userRole == "Registerfører" || userRole == "Admin";
+    var userName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name;
 }
 
-<div class="container mt-5 text-center" style="max-width: 900px;">
+<div class="container mt-5" style="max-width: 1200px;">
 
-    <!-- Success mesajları -->
-    @if (TempData["Success"] != null)
+    @if (!isAuthenticated)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
+        <!-- Login Page -->
+        <div class="text-center" style="max-width: 900px; margin: 0 auto;">
+            <h2 class="fw-bold mb-3" style="font-size: 1.7rem;">Report aviation obstacles quickly and safely</h2>
+            <p class="text-muted mb-5" style="font-size: 0.95rem;">
+                Help maintain Norwegian airspace safety by submitting obstacle reports directly from the field.
+            </p>
 
-    <!-- Error mesajları -->
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
+            <!-- Innloggingsskjema -->
+            <div class="card shadow-sm mx-auto text-start p-4 border-0" style="max-width: 400px;">
+                <h5 class="text-center mb-3 text-success fw-semibold">Log in to your account</h5>
 
-    @if (User.Identity.IsAuthenticated)
-    {
-        <!-- Vises når brukeren er logget inn -->
-        <h3 class="fw-semibold mb-3 text-success">Welcome back, @User.Identity.Name 👋</h3>
-        <p class="text-muted mb-4">
-            You are now logged in to the <strong>NRL Obstacle Reporting System</strong>.  
-            Use the button below to create, view, or manage obstacle reports.
-        </p>
+                <!-- Skjema for innlogging -->
+                <form asp-controller="Account" asp-action="Login" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label for="Email" class="form-label fw-medium small">Email address</label>
+                        <input type="email" class="form-control form-control-sm" id="Email" name="Email" required placeholder="Enter your email address" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="Password" class="form-label fw-medium small">Password</label>
+                        <input type="password" class="form-control form-control-sm" id="Password" name="Password" required placeholder="Enter your password" />
+                    </div>
 
-        <!-- Knapp for å opprette en ny hindringsrapport -->
-        <a class="btn btn-success btn-lg px-5 py-3 mb-3 shadow-sm" asp-controller="Obstacle" asp-action="DataForm">
-            Report an Obstacle
-        </a>
+                    <!-- Remember me checkbox -->
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="RememberMe" name="RememberMe" value="true" />
+                        <label class="form-check-label small" for="RememberMe">
+                            Remember me
+                        </label>
+                    </div>
 
-        <!-- Logg ut knapp (må bruke form for POST) -->
-        <div class="mt-4">
-            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-outline-danger px-4">Log out</button>
-            </form>
+                    <!-- Logg inn knapp -->
+                    <button type="submit" class="btn btn-success w-100 mt-3 py-2 shadow-sm">Log In</button>
+                </form>
+
+                <!-- Lenke til registrering -->
+                <div class="text-center mt-4">
+                    <p class="mb-1 text-muted small">Don't have an account?</p>
+                    <a class="btn btn-outline-secondary w-100 py-2 fw-semibold register-btn"
+                       asp-controller="Account" asp-action="Register">Create an account</a>
+                </div>
+            </div>
+
+            <!-- Informasjonsseksjon nederst på siden -->
+            <div class="row mt-5 text-start text-muted" style="font-size: 0.9rem;">
+                <div class="col-md-4 mb-4">
+                    <h6 class="text-dark mb-2">
+                        <i class="bi bi-geo-alt-fill text-primary me-2"></i> Smart Reporting
+                    </h6>
+                    <p>Submit accurate obstacle data using location-enabled tools that simplify field reporting.</p>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <h6 class="text-dark mb-2">
+                        <i class="bi bi-cloud-upload-fill text-info me-2"></i> Real-Time Updates
+                    </h6>
+                    <p>Ensure obstacle entries are synchronized instantly and accessible to NRL officers.</p>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <h6 class="text-dark mb-2">
+                        <i class="bi bi-shield-lock-fill text-success me-2"></i> Secure Access
+                    </h6>
+                    <p>All actions are encrypted and restricted to verified users for maximum data protection.</p>
+                </div>
+            </div>
         </div>
     }
     else
     {
-        <!-- Hovedvisning for brukere som ikke er logget inn -->
-        <h2 class="fw-bold mb-3" style="font-size: 1.7rem;">Report aviation obstacles quickly and safely</h2>
-        <p class="text-muted mb-5" style="font-size: 0.95rem;">
-            Help maintain Norwegian airspace safety by submitting obstacle reports directly from the field.
-        </p>
-
-        <!-- Innloggingsskjema -->
-        <div class="card shadow-sm mx-auto text-start p-4 border-0" style="max-width: 400px;">
-            <h5 class="text-center mb-3 text-success fw-semibold">Log in to your account</h5>
-
-            <!-- Skjema for innlogging -->
-            <form asp-controller="Account" asp-action="Login" method="post">
-                @Html.AntiForgeryToken()
-                <div class="mb-3">
-                    <label for="Email" class="form-label fw-medium small">Email address</label>
-                    <input type="email" class="form-control form-control-sm" id="Email" name="Email" required placeholder="Enter your email address" />
-                </div>
-                <div class="mb-3">
-                    <label for="Password" class="form-label fw-medium small">Password</label>
-                    <input type="password" class="form-control form-control-sm" id="Password" name="Password" required placeholder="Enter your password" />
-                </div>
-
-                <!-- Remember me checkbox -->
-                <div class="form-check mb-3">
-                    <input type="checkbox" class="form-check-input" id="RememberMe" name="RememberMe" value="true" />
-                    <label class="form-check-label small" for="RememberMe">
-                        Remember me
-                    </label>
-                </div>
-
-                <!-- Logg inn knapp -->
-                <button type="submit" class="btn btn-success w-100 mt-3 py-2 shadow-sm">Log In</button>
-            </form>
-
-            <!-- Lenke til registrering -->
-            <div class="text-center mt-4">
-                <p class="mb-1 text-muted small">Don't have an account?</p>
-                <a class="btn btn-outline-secondary w-100 py-2 fw-semibold register-btn"
-                   asp-controller="Account" asp-action="Register">Create an account</a>
-            </div>
+        <!-- Simple welcome page for authenticated users -->
+        <div class="text-center mb-5" style="margin-top: 80px;">
+            <h2 class="fw-bold mb-2 display-4">
+                Welcome, @userName! 👋
+            </h2>
+            <p class="text-muted fs-5">
+                @if (isPilot)
+                {
+                    <text>What would you like to do today?</text>
+                }
+                else
+                {
+                    <text>Access your tools below</text>
+                }
+            </p>
         </div>
 
-        <!-- Informasjonsseksjon nederst på siden -->
-        <div class="row mt-5 text-start text-muted" style="font-size: 0.9rem;">
-            <div class="col-md-4 mb-4">
-                <h6 class="text-dark mb-2">
-                    <i class="bi bi-geo-alt-fill text-primary me-2"></i> Smart Reporting
-                </h6>
-                <p>Submit accurate obstacle data using location-enabled tools that simplify field reporting.</p>
+        <!-- Quick Actions -->
+        <div class="card shadow-sm" style="max-width: 900px; margin: 0 auto;">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning-charge-fill me-2"></i>Quick Actions
+                </h5>
             </div>
-
-            <div class="col-md-4 mb-4">
-                <h6 class="text-dark mb-2">
-                    <i class="bi bi-cloud-upload-fill text-info me-2"></i> Real-Time Updates
-                </h6>
-                <p>Ensure obstacle entries are synchronized instantly and accessible to NRL officers.</p>
-            </div>
-
-            <div class="col-md-4 mb-4">
-                <h6 class="text-dark mb-2">
-                    <i class="bi bi-shield-lock-fill text-success me-2"></i> Secure Access
-                </h6>
-                <p>All actions are encrypted and restricted to verified users for maximum data protection.</p>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    @if (isPilot)
+                    {
+                        <div class="col-md-4">
+                            <a asp-controller="Obstacle" asp-action="DataForm" class="text-decoration-none">
+                                <div class="card border-0 shadow-sm h-100 hover-lift">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-flag-fill display-3 text-primary mb-3"></i>
+                                        <h5 class="card-title">Report Obstacle</h5>
+                                        <p class="card-text text-muted small mb-0">Create a new obstacle report</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a asp-controller="Obstacle" asp-action="MyReports" class="text-decoration-none">
+                                <div class="card border-0 shadow-sm h-100 hover-lift">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-file-earmark-text display-3 text-success mb-3"></i>
+                                        <h5 class="card-title">My Reports</h5>
+                                        <p class="card-text text-muted small mb-0">View and manage your reports</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a asp-controller="Obstacle" asp-action="List" class="text-decoration-none">
+                                <div class="card border-0 shadow-sm h-100 hover-lift">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-list-task display-3 text-info mb-3"></i>
+                                        <h5 class="card-title">All Reports</h5>
+                                        <p class="card-text text-muted small mb-0">Browse all obstacle reports</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-md-6">
+                            <a asp-controller="Obstacle" asp-action="Dashboard" class="text-decoration-none">
+                                <div class="card border-0 shadow-sm h-100 hover-lift">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-speedometer2 display-3 text-danger mb-3"></i>
+                                        <h5 class="card-title">Dashboard</h5>
+                                        <p class="card-text text-muted small mb-0">Review and approve obstacle reports</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a asp-controller="Obstacle" asp-action="List" class="text-decoration-none">
+                                <div class="card border-0 shadow-sm h-100 hover-lift">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-list-task display-3 text-primary mb-3"></i>
+                                        <h5 class="card-title">All Reports</h5>
+                                        <p class="card-text text-muted small mb-0">Browse and manage all reports</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     }
@@ -116,6 +178,16 @@
 
 <!-- Stilinnstillinger -->
 <style>
+    /* Hide navbar links on home page for authenticated users */
+    @if (isAuthenticated)
+    {
+        <text>
+        header nav .navbar-nav:not(.ms-auto) {
+            display: none !important;
+        }
+        </text>
+    }
+
     .register-btn:hover {
         background-color: #6c757d !important;
         color: white !important;
@@ -130,6 +202,16 @@
 
     .btn {
         font-size: 0.95rem;
+    }
+
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
     }
 
     @@media (max-width: 576px) {

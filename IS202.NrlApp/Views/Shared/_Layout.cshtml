@@ -145,23 +145,31 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             var userRole = User.FindFirst("Role")?.Value;
+                            var isPilot = userRole == "Pilot" || string.IsNullOrEmpty(userRole);
+                            var isRegisterforer = userRole == "Registerfører" || userRole == "Admin";
 
-                            <!-- Report (bare for innloggede brukere) -->
-                            <li class="nav-item">
-                                <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="DataForm">
-                                    <i class="bi bi-flag-fill"></i> Report
-                                </a>
-                            </li>
+                            <!-- Report (bare for Piloter) -->
+                            if (isPilot)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="DataForm">
+                                        <i class="bi bi-flag-fill"></i> Report
+                                    </a>
+                                </li>
+                            }
 
-                            <!-- My Reports (bare for innloggede brukere) -->
-                            <li class="nav-item">
-                                <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="MyReports">
-                                    <i class="bi bi-file-earmark-person"></i> My Reports
-                                </a>
-                            </li>
+                            <!-- My Reports (bare for Piloter) -->
+                            if (isPilot)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="MyReports">
+                                        <i class="bi bi-file-earmark-person"></i> My Reports
+                                    </a>
+                                </li>
+                            }
 
                             <!-- Dashboard (bare for Registerfører og Admin) -->
-                            if (userRole == "Registerfører" || userRole == "Admin")
+                            if (isRegisterforer)
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="Dashboard">
