@@ -1,7 +1,10 @@
 @model IS202.NrlApp.Models.ObstacleData
+@using System.Security.Claims
 @{
     ViewData["Title"] = "Edit Report";
     var obstacleId = ViewBag.ObstacleId;
+    var currentUserRole = User.FindFirst("Role")?.Value;
+    var isAdmin = currentUserRole == "Registerfører" || currentUserRole == "Admin";
 }
 
 <div class="container my-4">
@@ -11,6 +14,14 @@
         </h2>
         <p class="text-muted mb-0">Update the obstacle details below</p>
     </div>
+
+    @if (ViewBag.CurrentStatus == "Rejected")
+    {
+        <div class="alert alert-warning mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Note:</strong> This report was rejected. After editing, it will be resubmitted with "Pending" status for a new review.
+        </div>
+    }
 
     <div class="row g-4">
         <!-- Form column -->
@@ -79,9 +90,18 @@
                             <button type="submit" class="btn btn-success btn-lg">
                                 <i class="bi bi-check-circle me-1"></i> Save Changes
                             </button>
-                            <a asp-action="MyReports" class="btn btn-secondary btn-lg">
-                                <i class="bi bi-x-circle me-1"></i> Cancel
-                            </a>
+                            @if (isAdmin)
+                            {
+                                <a asp-action="Dashboard" class="btn btn-secondary btn-lg">
+                                    <i class="bi bi-x-circle me-1"></i> Cancel
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-action="MyReports" class="btn btn-secondary btn-lg">
+                                    <i class="bi bi-x-circle me-1"></i> Cancel
+                                </a>
+                            }
                         </div>
                     </form>
                 </div>
@@ -127,9 +147,18 @@
 
             // Initialize map centered on existing location
             const map = L.map('editMap').setView([initialLat, initialLon], 13);
+            
+            // Base layer: Satellite imagery
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+            }).addTo(map);
+            
+            // Overlay: OpenStreetMap labels
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
+                opacity: 0.4,
+                attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
             // Disable scroll wheel zoom by default

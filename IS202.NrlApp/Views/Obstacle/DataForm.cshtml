@@ -14,10 +14,12 @@
     @* Bruker-informasjon kort *@
     @if (User.Identity?.IsAuthenticated == true)
     {
+        var userName = User.FindFirst("FullName")?.Value ?? User.Identity.Name;
+        
         <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
             <i class="bi bi-info-circle-fill me-2"></i>
             <div>
-                <strong>Reporting as:</strong> @User.Identity.Name
+                <strong>Reporting as:</strong> @userName
                 @if (User.HasClaim(c => c.Type == "Organization"))
                 {
                     <span class="text-muted">(@User.FindFirst("Organization")?.Value)</span>
@@ -86,12 +88,9 @@
                         <input type="hidden" asp-for="GeometryType" />
                         <input type="hidden" asp-for="GeoJsonData" />
 
-                        <div class="d-flex gap-2 mb-3">
+                        <div class="mb-3">
                             <button type="button" id="geoBtn" class="btn btn-primary">
                                 <i class="bi bi-geo-alt-fill me-1"></i> Use my location
-                            </button>
-                            <button type="button" id="clearPointBtn" class="btn btn-secondary">
-                                <i class="bi bi-x-circle me-1"></i> Clear marker
                             </button>
                         </div>
 
@@ -104,7 +103,7 @@
                 </div>
             </div>
             <small class="text-muted d-block mt-2">
-                <i class="bi bi-lightbulb"></i> Click on the map to mark the obstacle location. You can drag the marker to fine-tune the position.
+                <i class="bi bi-lightbulb"></i> Use the map toolbar to draw: line (━) for cables/wires, area (⬟) for buildings, circle (⭕) for zones, or point (📍) for towers. You can edit or delete shapes using the toolbar buttons.
             </small>
         </div>
 
@@ -125,24 +124,42 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Leaflet.draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Leaflet.draw JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
     <script>
         (function () {
             const latInput = document.getElementById("Latitude");
             const lonInput = document.getElementById("Longitude");
+            const geoTypeInput = document.getElementById("GeometryType");
             const geoJsonInput = document.getElementById("GeoJsonData");
             const geoBtn = document.getElementById("geoBtn");
-            const clearBtn = document.getElementById("clearPointBtn");
 
             // Initialiserer kart (sentrert rundt Kristiansand)
             const map = L.map('reportMap').setView([58.146, 7.995], 12);
+            
+            // Base layer: Satellite imagery (Esri World Imagery)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+            }).addTo(map);
+            
+            // Overlay: OpenStreetMap labels (semi-transparent for hybrid view)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
+                opacity: 0.4,  // Semi-transparent labels
+                attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
             // Forhindrer utilsiktet zoom ved scrolling
@@ -150,40 +167,147 @@
             map.on('focus', () => map.scrollWheelZoom.enable());
             map.on('blur',  () => map.scrollWheelZoom.disable());
 
-            let marker = null;
+            // FeatureGroup for tegninger
+            const drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
 
-            // Setter markør og oppdaterer input-felt
-            function setPoint(lat, lon) {
-                if (!marker) {
-                    marker = L.marker([lat, lon], { draggable: true }).addTo(map);
-                    marker.on('dragend', () => {
-                        const { lat, lng } = marker.getLatLng();
-                        updatePoint(lat, lng);
-                    });
-                } else {
-                    marker.setLatLng([lat, lon]);
+            // Leaflet.draw kontroller
+            const drawControl = new L.Control.Draw({
+                draw: {
+                    polyline: {
+                        shapeOptions: {
+                            color: '#f357a1',
+                            weight: 4
+                        }
+                    },
+                    polygon: {
+                        shapeOptions: {
+                            color: '#3388ff',
+                            weight: 3
+                        }
+                    },
+                    circle: {
+                        shapeOptions: {
+                            color: '#ff7800',
+                            weight: 3
+                        }
+                    },
+                    rectangle: false,  // Rectangle deaktivert
+                    marker: {
+                        icon: new L.Icon.Default()
+                    },
+                    circlemarker: false
+                },
+                edit: {
+                    featureGroup: drawnItems,
+                    remove: true
                 }
-                updatePoint(lat, lon);
-            }
+            });
+            map.addControl(drawControl);
 
-            // Oppdaterer koordinater og GeoJSON
-            function updatePoint(lat, lon) {
-                latInput.value = lat.toFixed(6);
-                lonInput.value = lon.toFixed(6);
+            // Når en form tegnes
+            map.on(L.Draw.Event.CREATED, function (event) {
+                const layer = event.layer;
+                const type = event.layerType;
                 
-                // Genererer GeoJSON for punktet
-                geoJsonInput.value = JSON.stringify({
-                    type: "Point",
-                    coordinates: [parseFloat(lon.toFixed(6)), parseFloat(lat.toFixed(6))]
-                });
-            }
-
-            // Klikk på kartet for å sette posisjon
-            map.on('click', (e) => {
-                setPoint(e.latlng.lat, e.latlng.lng);
+                // Fjern tidligere tegninger
+                drawnItems.clearLayers();
+                
+                // Legg til ny tegning
+                drawnItems.addLayer(layer);
+                
+                // Konverter til GeoJSON og lagre
+                const geoJson = layer.toGeoJSON();
+                
+                if (type === 'marker') {
+                    // Point
+                    const latlng = layer.getLatLng();
+                    latInput.value = latlng.lat.toFixed(6);
+                    lonInput.value = latlng.lng.toFixed(6);
+                    geoTypeInput.value = 'Point';
+                    geoJsonInput.value = JSON.stringify(geoJson.geometry);
+                } else if (type === 'polyline') {
+                    // LineString
+                    const latlngs = layer.getLatLngs();
+                    if (latlngs.length > 0) {
+                        latInput.value = latlngs[0].lat.toFixed(6);
+                        lonInput.value = latlngs[0].lng.toFixed(6);
+                    }
+                    geoTypeInput.value = 'LineString';
+                    geoJsonInput.value = JSON.stringify(geoJson.geometry);
+                } else if (type === 'polygon') {
+                    // Polygon
+                    const latlngs = layer.getLatLngs()[0]; // First ring
+                    if (latlngs.length > 0) {
+                        latInput.value = latlngs[0].lat.toFixed(6);
+                        lonInput.value = latlngs[0].lng.toFixed(6);
+                    }
+                    geoTypeInput.value = 'Polygon';
+                    geoJsonInput.value = JSON.stringify(geoJson.geometry);
+                } else if (type === 'circle') {
+                    // Circle (converted to Point with radius)
+                    const latlng = layer.getLatLng();
+                    const radius = layer.getRadius();
+                    latInput.value = latlng.lat.toFixed(6);
+                    lonInput.value = latlng.lng.toFixed(6);
+                    geoTypeInput.value = 'Circle';
+                    // Store circle as Point with radius property
+                    geoJsonInput.value = JSON.stringify({
+                        type: "Point",
+                        coordinates: [parseFloat(latlng.lng.toFixed(6)), parseFloat(latlng.lat.toFixed(6))],
+                        properties: { radius: radius }
+                    });
+                }
             });
 
-            // "Use my location" knapp
+            // Når en form redigeres
+            map.on(L.Draw.Event.EDITED, function (event) {
+                const layers = event.layers;
+                layers.eachLayer(function (layer) {
+                    const geoJson = layer.toGeoJSON();
+                    
+                    if (layer instanceof L.Marker) {
+                        const latlng = layer.getLatLng();
+                        latInput.value = latlng.lat.toFixed(6);
+                        lonInput.value = latlng.lng.toFixed(6);
+                    } else if (layer instanceof L.Circle) {
+                        const latlng = layer.getLatLng();
+                        const radius = layer.getRadius();
+                        latInput.value = latlng.lat.toFixed(6);
+                        lonInput.value = latlng.lng.toFixed(6);
+                        geoJsonInput.value = JSON.stringify({
+                            type: "Point",
+                            coordinates: [parseFloat(latlng.lng.toFixed(6)), parseFloat(latlng.lat.toFixed(6))],
+                            properties: { radius: radius }
+                        });
+                        return; // Skip default geoJson assignment
+                    } else if (layer instanceof L.Polygon) {
+                        const latlngs = layer.getLatLngs()[0];
+                        if (latlngs.length > 0) {
+                            latInput.value = latlngs[0].lat.toFixed(6);
+                            lonInput.value = latlngs[0].lng.toFixed(6);
+                        }
+                    } else if (layer instanceof L.Polyline) {
+                        const latlngs = layer.getLatLngs();
+                        if (latlngs.length > 0) {
+                            latInput.value = latlngs[0].lat.toFixed(6);
+                            lonInput.value = latlngs[0].lng.toFixed(6);
+                        }
+                    }
+                    
+                    geoJsonInput.value = JSON.stringify(geoJson.geometry);
+                });
+            });
+
+            // Når en form slettes
+            map.on(L.Draw.Event.DELETED, function () {
+                latInput.value = '';
+                lonInput.value = '';
+                geoTypeInput.value = '';
+                geoJsonInput.value = '';
+            });
+
+            // "Use my location" knapp (legger til en markør)
             geoBtn?.addEventListener('click', () => {
                 if (!navigator.geolocation) {
                     alert('Geolocation is not supported by your browser.');
@@ -192,23 +316,28 @@
                 navigator.geolocation.getCurrentPosition(
                     pos => {
                         const { latitude, longitude } = pos.coords;
-                        setPoint(latitude, longitude);
+                        
+                        // Fjern tidligere tegninger
+                        drawnItems.clearLayers();
+                        
+                        // Legg til ny markør
+                        const marker = L.marker([latitude, longitude]);
+                        drawnItems.addLayer(marker);
+                        
+                        // Oppdater input
+                        latInput.value = latitude.toFixed(6);
+                        lonInput.value = longitude.toFixed(6);
+                        geoTypeInput.value = 'Point';
+                        geoJsonInput.value = JSON.stringify({
+                            type: "Point",
+                            coordinates: [parseFloat(longitude.toFixed(6)), parseFloat(latitude.toFixed(6))]
+                        });
+                        
                         map.setView([latitude, longitude], 15);
                     },
                     err => alert('Could not get location: ' + err.message),
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
-            });
-
-            // "Clear marker" knapp
-            clearBtn?.addEventListener('click', () => {
-                if (marker) { 
-                    map.removeLayer(marker); 
-                    marker = null; 
-                }
-                latInput.value = '';
-                lonInput.value = '';
-                geoJsonInput.value = '';
             });
 
             // Viser validation summary bare hvis det er feil

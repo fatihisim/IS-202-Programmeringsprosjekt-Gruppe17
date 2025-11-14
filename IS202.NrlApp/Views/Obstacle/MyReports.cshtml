@@ -1,22 +1,26 @@
 @model IEnumerable<IS202.NrlApp.Models.Obstacle>
 @{
     ViewData["Title"] = "My Reports";
+    var statusFilter = ViewBag.StatusFilter as string ?? "";
+    var typeFilter = ViewBag.TypeFilter as string ?? "";
+    var hasActiveFilter = !string.IsNullOrEmpty(statusFilter) || !string.IsNullOrEmpty(typeFilter);
+    
+    // İstatistikler ViewBag'den (TÜM raporlar, filtrelenMEMİŞ)
+    var totalCount = ViewBag.TotalCount ?? 0;
+    var pendingCount = ViewBag.PendingCount ?? 0;
+    var approvedCount = ViewBag.ApprovedCount ?? 0;
+    var rejectedCount = ViewBag.RejectedCount ?? 0;
 }
 
 <div class="container my-4">
-    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-        <div>
-            <h2 class="mb-0">
-                <i class="bi bi-file-earmark-person me-2"></i>My Reports
-            </h2>
-            <p class="text-muted mb-0">View and manage your obstacle reports</p>
-        </div>
-        <a asp-controller="Obstacle" asp-action="DataForm" class="btn btn-primary">
-            <i class="bi bi-flag-fill me-1"></i> New Report
-        </a>
+    <div class="mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-file-earmark-person me-2"></i>My Reports
+        </h2>
+        <p class="text-muted mb-0">View and manage your obstacle reports</p>
     </div>
 
-    @if (!Model.Any())
+    @if (totalCount == 0)
     {
         <div class="alert alert-info">
             <i class="bi bi-info-circle me-2"></i>
@@ -34,7 +38,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-warning mb-0">Pending</h6>
-                                <h2 class="mb-0">@Model.Count(o => o.Status == "Pending")</h2>
+                                <h2 class="mb-0">@pendingCount</h2>
                             </div>
                             <i class="bi bi-hourglass-split display-4 text-warning opacity-50"></i>
                         </div>
@@ -47,7 +51,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-success mb-0">Approved</h6>
-                                <h2 class="mb-0">@Model.Count(o => o.Status == "Approved")</h2>
+                                <h2 class="mb-0">@approvedCount</h2>
                             </div>
                             <i class="bi bi-check-circle display-4 text-success opacity-50"></i>
                         </div>
@@ -60,7 +64,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-danger mb-0">Rejected</h6>
-                                <h2 class="mb-0">@Model.Count(o => o.Status == "Rejected")</h2>
+                                <h2 class="mb-0">@rejectedCount</h2>
                             </div>
                             <i class="bi bi-x-circle display-4 text-danger opacity-50"></i>
                         </div>
@@ -69,11 +73,54 @@
             </div>
         </div>
 
+        <!-- Filtreleme -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form method="get" asp-action="MyReports" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="statusFilter" class="form-label fw-semibold">Status</label>
+                        <select name="statusFilter" id="statusFilter" class="form-select">
+                            <option value="" selected="@(string.IsNullOrEmpty(statusFilter))">All Statuses</option>
+                            <option value="Pending" selected="@(statusFilter == "Pending")">Pending</option>
+                            <option value="Approved" selected="@(statusFilter == "Approved")">Approved</option>
+                            <option value="Rejected" selected="@(statusFilter == "Rejected")">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="typeFilter" class="form-label fw-semibold">Obstacle Type</label>
+                        <select name="typeFilter" id="typeFilter" class="form-select">
+                            <option value="">All Types</option>
+                            <option value="Crane" selected="@(typeFilter == "Crane")">Crane</option>
+                            <option value="Mast" selected="@(typeFilter == "Mast")">Mast</option>
+                            <option value="Power line" selected="@(typeFilter == "Power line")">Power line</option>
+                            <option value="Tower" selected="@(typeFilter == "Tower")">Tower</option>
+                            <option value="Building" selected="@(typeFilter == "Building")">Building</option>
+                            <option value="Other" selected="@(typeFilter == "Other")">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel-fill me-1"></i> Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Table -->
         <div class="card shadow-sm">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-table me-2"></i>Your Reports</span>
-                <span class="badge bg-secondary">@Model.Count() total</span>
+                <span class="badge bg-secondary">
+                    @if (Model.Count() < totalCount)
+                    {
+                        @:Showing @Model.Count() of @totalCount reports
+                    }
+                    else
+                    {
+                        @:@totalCount total
+                    }
+                </span>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -89,6 +136,20 @@
                         </tr>
                     </thead>
                     <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="bi bi-search text-muted display-4 d-block mb-3"></i>
+                                <h5 class="text-muted">No reports found with the current filters</h5>
+                                <p class="text-muted">Try adjusting your filter criteria or 
+                                    <a asp-action="MyReports">clear all filters</a>
+                                </p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
                     @foreach (var o in Model)
                     {
                         var statusBadgeClass = o.Status switch
@@ -131,40 +192,51 @@
                                 <small>@o.CreatedAt.ToString("yyyy-MM-dd HH:mm")</small>
                             </td>
                             <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-outline-primary" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-outline-danger" 
-                                            onclick="confirmDelete(@o.Id, '@o.ObstacleType')" title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
+                                @if (o.Status != "Approved")
+                                {
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="confirmDelete(@o.Id, '@o.ObstacleType')" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
 
-                                <!-- Hidden delete form -->
-                                <form id="delete-form-@o.Id" asp-action="Delete" asp-route-id="@o.Id" 
-                                      method="post" style="display:none;">
-                                    @Html.AntiForgeryToken()
-                                </form>
+                                    <!-- Hidden delete form -->
+                                    <form id="delete-form-@o.Id" asp-action="Delete" asp-route-id="@o.Id" 
+                                          method="post" style="display:none;">
+                                        @Html.AntiForgeryToken()
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-secondary btn-sm" disabled 
+                                            title="Approved reports are locked and cannot be edited or deleted">
+                                        <i class="bi bi-lock-fill me-1"></i> Locked
+                                    </button>
+                                }
                             </td>
                         </tr>
+                    }
                     }
                     </tbody>
                 </table>
             </div>
         </div>
 
-        @if (!string.IsNullOrEmpty(Model.FirstOrDefault()?.ProcessorComment))
+        @if (!string.IsNullOrEmpty(Model.FirstOrDefault()?.Feedback))
         {
             <div class="card mt-3 border-info">
                 <div class="card-header bg-info text-white">
                     <i class="bi bi-chat-left-text me-2"></i>Feedback from NRL Officer
                 </div>
                 <div class="card-body">
-                    @foreach (var o in Model.Where(x => !string.IsNullOrEmpty(x.ProcessorComment)))
+                    @foreach (var o in Model.Where(x => !string.IsNullOrEmpty(x.Feedback)))
                     {
                         <div class="mb-2">
-                            <strong>Report #@o.Id:</strong> @o.ProcessorComment
+                            <strong>Report #@o.Id:</strong> @o.Feedback
                         </div>
                     }
                 </div>

@@ -6,29 +6,25 @@
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
     var currentUserRole = User.FindFirst("Role")?.Value;
     var isAdmin = currentUserRole == "Registerfører" || currentUserRole == "Admin";
+    
+    var statusFilter = ViewBag.StatusFilter as string ?? "";
+    var typeFilter = ViewBag.TypeFilter as string ?? "";
+    
+    // İstatistikler ViewBag'den
+    var totalCount = ViewBag.TotalCount ?? 0;
+    var pendingCount = ViewBag.PendingCount ?? 0;
+    var approvedCount = ViewBag.ApprovedCount ?? 0;
+    var rejectedCount = ViewBag.RejectedCount ?? 0;
 }
 
 <div class="container my-4">
-    <!-- Header + actions -->
-    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-        <div>
-            <h2 class="mb-0"><i class="bi bi-list-task me-2"></i>All Reports</h2>
-            <p class="text-muted mb-0">View all obstacle reports from all users</p>
-        </div>
-
-        <div class="d-flex gap-2">
-            <input id="filterInput" class="form-control form-control-sm"
-                   placeholder="Search (reporter, org, type, comment)" style="min-width:280px;" />
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <a asp-controller="Obstacle" asp-action="DataForm" class="btn btn-primary">
-                    <i class="bi bi-flag-fill me-1"></i> New Report
-                </a>
-            }
-        </div>
+    <!-- Header -->
+    <div class="mb-4">
+        <h2 class="mb-0"><i class="bi bi-list-task me-2"></i>All Reports</h2>
+        <p class="text-muted mb-0">View all obstacle reports from all users</p>
     </div>
 
-    @if (!Model.Any())
+    @if (totalCount == 0)
     {
         <div class="alert alert-info">
             <i class="bi bi-info-circle me-2"></i>
@@ -43,7 +39,7 @@
                 <div class="card border-primary shadow-sm">
                     <div class="card-body py-2">
                         <small class="text-muted">Total Reports</small>
-                        <h4 class="mb-0">@Model.Count()</h4>
+                        <h4 class="mb-0">@totalCount</h4>
                     </div>
                 </div>
             </div>
@@ -51,7 +47,7 @@
                 <div class="card border-warning shadow-sm">
                     <div class="card-body py-2">
                         <small class="text-muted">Pending</small>
-                        <h4 class="mb-0 text-warning">@Model.Count(o => o.Status == "Pending")</h4>
+                        <h4 class="mb-0 text-warning">@pendingCount</h4>
                     </div>
                 </div>
             </div>
@@ -59,7 +55,7 @@
                 <div class="card border-success shadow-sm">
                     <div class="card-body py-2">
                         <small class="text-muted">Approved</small>
-                        <h4 class="mb-0 text-success">@Model.Count(o => o.Status == "Approved")</h4>
+                        <h4 class="mb-0 text-success">@approvedCount</h4>
                     </div>
                 </div>
             </div>
@@ -67,16 +63,60 @@
                 <div class="card border-danger shadow-sm">
                     <div class="card-body py-2">
                         <small class="text-muted">Rejected</small>
-                        <h4 class="mb-0 text-danger">@Model.Count(o => o.Status == "Rejected")</h4>
+                        <h4 class="mb-0 text-danger">@rejectedCount</h4>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Filtreleme -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <form method="get" asp-action="List" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="statusFilter" class="form-label fw-semibold">Status</label>
+                        <select name="statusFilter" id="statusFilter" class="form-select">
+                            <option value="" selected="@(string.IsNullOrEmpty(statusFilter))">All Statuses</option>
+                            <option value="Pending" selected="@(statusFilter == "Pending")">Pending</option>
+                            <option value="Approved" selected="@(statusFilter == "Approved")">Approved</option>
+                            <option value="Rejected" selected="@(statusFilter == "Rejected")">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="typeFilter" class="form-label fw-semibold">Obstacle Type</label>
+                        <select name="typeFilter" id="typeFilter" class="form-select">
+                            <option value="">All Types</option>
+                            <option value="Crane" selected="@(typeFilter == "Crane")">Crane</option>
+                            <option value="Mast" selected="@(typeFilter == "Mast")">Mast</option>
+                            <option value="Power line" selected="@(typeFilter == "Power line")">Power line</option>
+                            <option value="Tower" selected="@(typeFilter == "Tower")">Tower</option>
+                            <option value="Building" selected="@(typeFilter == "Building")">Building</option>
+                            <option value="Other" selected="@(typeFilter == "Other")">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel-fill me-1"></i> Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Table -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light">
-                <i class="bi bi-table me-2"></i>Reports Table
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table me-2"></i>Reports Table</span>
+                <span class="badge bg-secondary">
+                    @if (Model.Count() < totalCount)
+                    {
+                        @:Showing @Model.Count() of @totalCount reports
+                    }
+                    else
+                    {
+                        @:@totalCount reports
+                    }
+                </span>
             </div>
             <div class="table-responsive">
                 <table id="obstacleTable" class="table table-hover align-middle mb-0">
@@ -90,13 +130,27 @@
                             <th>Comment</th>
                             <th class="text-end">Location</th>
                             <th class="text-nowrap">Created</th>
-                            @if (User.Identity?.IsAuthenticated == true)
+                            @if (isAdmin)
                             {
                                 <th style="width: 120px;">Actions</th>
                             }
                         </tr>
                     </thead>
                     <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="@(isAdmin ? "9" : "8")" class="text-center py-5">
+                                <i class="bi bi-search text-muted display-4 d-block mb-3"></i>
+                                <h5 class="text-muted">No reports found with the current filters</h5>
+                                <p class="text-muted">Try adjusting your filter criteria or 
+                                    <a asp-action="List">clear all filters</a>
+                                </p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
                     @foreach (var o in Model)
                     {
                         var lat = o.Latitude?.ToString("F6");
@@ -142,35 +196,29 @@
                                 }
                             </td>
                             <td><small>@o.CreatedAt.ToString("yyyy-MM-dd HH:mm")</small></td>
-                            @if (User.Identity?.IsAuthenticated == true)
+                            @if (isAdmin)
                             {
                                 <td>
-                                    @if (canEdit)
-                                    {
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <a asp-action="Edit" asp-route-id="@o.Id" 
-                                               class="btn btn-outline-primary" title="Edit">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-outline-danger" 
-                                                    onclick="confirmDelete(@o.Id, '@o.ObstacleType')" title="Delete">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-action="Edit" asp-route-id="@o.Id" 
+                                           class="btn btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="confirmDelete(@o.Id, '@o.ObstacleType')" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
 
-                                        <!-- Hidden delete form -->
-                                        <form id="delete-form-@o.Id" asp-action="Delete" asp-route-id="@o.Id" 
-                                              method="post" style="display:none;">
-                                            @Html.AntiForgeryToken()
-                                        </form>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted small">—</span>
-                                    }
+                                    <!-- Hidden delete form -->
+                                    <form id="delete-form-@o.Id" asp-action="Delete" asp-route-id="@o.Id" 
+                                          method="post" style="display:none;">
+                                        @Html.AntiForgeryToken()
+                                    </form>
                                 </td>
                             }
                         </tr>
+                    }
                     }
                     </tbody>
                 </table>
@@ -197,21 +245,6 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
-        // ---- Client-side filter for the table
-        (function () {
-            const input = document.getElementById('filterInput');
-            const rows = Array.from(document.querySelectorAll('#obstacleTable tbody tr'));
-            if (input) {
-                input.addEventListener('input', () => {
-                    const q = input.value.toLowerCase();
-                    rows.forEach(tr => {
-                        const text = tr.innerText.toLowerCase();
-                        tr.style.display = text.includes(q) ? '' : 'none';
-                    });
-                });
-            }
-        })();
-
         // ---- Delete confirmation
         function confirmDelete(id, obstacleType) {
             if (confirm(`Are you sure you want to delete this ${obstacleType} report?\n\nThis action cannot be undone.`)) {
@@ -235,8 +268,18 @@
             ));
 
             const map = L.map('listMap').setView([58.146, 7.995], 12);
+            
+            // Satellite base
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri'
+            }).addTo(map);
+            
+            // Labels overlay
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19, attribution: '&copy; OpenStreetMap'
+                maxZoom: 19,
+                opacity: 0.4,
+                attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
             const markers = [];

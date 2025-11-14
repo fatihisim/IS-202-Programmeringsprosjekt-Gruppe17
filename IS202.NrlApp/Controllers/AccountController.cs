@@ -36,36 +36,20 @@ namespace IS202.NrlApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                TempData["Error"] = "Please fill in all required fields.";
-                return RedirectToAction("Index", "Home");
+                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, false);
+
+                if (result.Succeeded)
+                {
+                    TempData["Success"] = "Logged in successfully.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                ModelState.AddModelError(string.Empty, "Invalid email or password");
             }
 
-            // Sjekker om brukeren eksisterer først
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
-            {
-                // Brukeren finnes ikke
-                TempData["Error"] = "Invalid email or password. Please try again.";
-                Console.WriteLine($"Login failed - user not found: {model.Email}");
-                return RedirectToAction("Index", "Home");
-            }
-
-            // Forsøker å logge inn
-            var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, false);
-
-            if (result.Succeeded)
-            {
-                TempData["Success"] = "Welcome back! You have successfully logged in.";
-                Console.WriteLine($"Login successful: {model.Email}");
-                return RedirectToAction("Index", "Home");
-            }
-
-            // Login mislyktes (feil passord)
-            TempData["Error"] = "Invalid email or password. Please try again.";
-            Console.WriteLine($"Login failed - wrong password: {model.Email}");
-            
+            // Hvis innlogging feiler, send tilbake til startsiden
             return RedirectToAction("Index", "Home");
         }
 
@@ -89,24 +73,16 @@ namespace IS202.NrlApp.Controllers
 
                 if (result.Succeeded)
                 {
-                    // Mapper rolle fra skjema til intern rolle
-                    string mappedRole = model.Role switch
-                    {
-                        "NRL Officer" => "Registerfører",
-                        "Admin" => "Admin",
-                        _ => "Pilot"  // Default er Pilot
-                    };
-
                     // Legger til claims
                     await _userManager.AddClaimAsync(user, new Claim("FullName", model.FullName));
                     await _userManager.AddClaimAsync(user, new Claim("PhoneNumber", model.PhoneNumber ?? ""));
-                    await _userManager.AddClaimAsync(user, new Claim("Role", mappedRole));
+                    await _userManager.AddClaimAsync(user, new Claim("Role", model.Role));
                     await _userManager.AddClaimAsync(user, new Claim("Organization", model.Organization ?? ""));
 
                     // Logger inn automatisk
                     await _signInManager.SignInAsync(user, isPersistent: false);
 
-                    TempData["Success"] = $"Welcome, {model.FullName}! Your account has been created successfully.";
+                    TempData["Success"] = "Account created successfully! Welcome to NRL Obstacle Reporting.";
 
                     return RedirectToAction("Index", "Home");
                 }

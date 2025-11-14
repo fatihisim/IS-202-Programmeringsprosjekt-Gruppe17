@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -82,6 +82,58 @@
             color: white;
         }
 
+        .role-badge-pilot {
+            background-color: #198754;
+            color: white;
+        }
+
+        .role-badge-admin {
+            background-color: #ffc107;
+            color: black;
+        }
+
+        /* Toast notification (fixed top-center) */
+        .toast-notification {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 500px;
+            width: 90%;
+            z-index: 9999;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @@keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        @@media (max-width: 576px) {
+            .toast-notification {
+                top: 70px;
+                width: 95%;
+                font-size: 0.9rem;
+            }
+        }
+
+        .role-badge-registerforer {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .role-badge-pilot {
+            background-color: #198754;
+            color: white;
+        }
+
         .role-badge-admin {
             background-color: #6f42c1;
             color: white;
@@ -136,12 +188,6 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-house-door"></i> Home
-                            </a>
-                        </li>
-
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             var userRole = User.FindFirst("Role")?.Value;
@@ -241,52 +287,39 @@
                                 </ul>
                             </li>
                         }
-                        else
-                        {
-                            <!-- Login og Register (for ikke-innloggede brukere) -->
-                            <li class="nav-item">
-                                <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Index">
-                                    <i class="bi bi-box-arrow-in-right"></i> Login
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-light" asp-area="" asp-controller="Account" asp-action="Register">
-                                    <i class="bi bi-person-plus"></i> Register
-                                </a>
-                            </li>
-                        }
+                        @* else bloğu kaldırıldı - unauthenticated kullanıcılar için navbar linkleri yok *@
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
 
+    <!-- TempData meldinger (fixed top-center toast) -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show toast-notification" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show toast-notification" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Info"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show toast-notification" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>@TempData["Info"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="container pb-3">
-        <!-- TempData meldinger -->
-        @if (TempData["Success"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-
-        @if (TempData["Error"] != null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-
-        @if (TempData["Info"] != null)
-        {
-            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                <i class="bi bi-info-circle-fill me-2"></i>@TempData["Info"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
@@ -298,6 +331,18 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-dismiss alerts after 5 seconds
+        $(document).ready(function() {
+            setTimeout(function() {
+                $('.alert').fadeOut('slow', function() {
+                    $(this).alert('close');
+                });
+            }, 5000);
+        });
+    </script>
+    
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
