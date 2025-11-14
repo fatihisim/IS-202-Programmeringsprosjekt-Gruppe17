@@ -16,7 +16,6 @@
         body {
             background-color: #ffffff;
             font-family: 'Segoe UI', 'Roboto', sans-serif;
-            padding-bottom: 60px;
         }
 
         .navbar {
@@ -40,17 +39,18 @@
 
         /* User dropdown styling */
         .user-dropdown-btn {
-            background-color: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #ffffff;
             padding: 0.375rem 0.75rem;
             border-radius: 0.25rem;
-            transition: 0.2s;
+            transition: all 0.2s ease;
         }
 
         .user-dropdown-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.5);
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #ffffff;
         }
 
         .dropdown-menu {
@@ -147,14 +147,13 @@
         footer {
             background-color: #f8f9fa;
             border-top: 1px solid #e2e2e2;
-            position: fixed;
-            bottom: 0;
+            margin-top: 3rem;
             width: 100%;
         }
 
         footer p {
             margin: 0;
-            padding: 10px;
+            padding: 15px;
             font-size: 0.9rem;
             color: #666;
         }
@@ -199,7 +198,7 @@
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="DataForm">
-                                        <i class="bi bi-flag-fill"></i> Report
+                                        <i class="bi bi-geo-alt-fill"></i> Report
                                     </a>
                                 </li>
                             }
@@ -258,21 +257,22 @@
                             <li class="nav-item dropdown">
                                 <button class="btn btn-sm user-dropdown-btn dropdown-toggle" type="button" 
                                         id="userDropdown" data-bs-toggle="dropdown">
-                                    <i class="bi bi-person-circle"></i>
+                                    <i class="bi bi-person-circle me-1"></i>
                                     @userName
-                                    <span class="@roleBadgeClass">@roleDisplayName</span>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li>
                                         <span class="dropdown-item-text">
-                                            <strong>@userName</strong><br />
+                                            <strong class="text-dark">@userName</strong>
+                                            <span class="@roleBadgeClass ms-2">@roleDisplayName</span>
+                                            <br />
                                             <small class="text-muted">@userEmail</small>
                                         </span>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <a class="dropdown-item" asp-controller="Obstacle" asp-action="MyReports">
-                                            <i class="bi bi-file-earmark-person me-2"></i>My Reports
+                                        <a class="dropdown-item" asp-controller="Home" asp-action="Privacy">
+                                            <i class="bi bi-shield-lock me-2"></i>Privacy
                                         </a>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
