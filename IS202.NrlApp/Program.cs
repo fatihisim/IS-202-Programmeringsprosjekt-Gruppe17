@@ -36,6 +36,56 @@ builder.Services.AddControllersWithViews();
 var app = builder.Build();
 
 // --------------------------------------------------------
+// Kjører databasemigrasjoner automatisk ved oppstart
+// Dette sikrer at databasen alltid er oppdatert med siste schema
+// --------------------------------------------------------
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        
+        logger.LogInformation("Starter databasemigrering...");
+        
+        // Venter på at databasen er klar (viktig i Docker-miljø)
+        var retryCount = 0;
+        var maxRetries = 10;
+        
+        while (retryCount < maxRetries)
+        {
+            try
+            {
+                // Kjører alle pendende migrasjoner
+                context.Database.Migrate();
+                logger.LogInformation("Databasemigrering fullført.");
+                break;
+            }
+            catch (Exception ex)
+            {
+                retryCount++;
+                if (retryCount >= maxRetries)
+                {
+                    logger.LogError(ex, "Kunne ikke gjennomføre databasemigrering etter {RetryCount} forsøk.", maxRetries);
+                    throw;
+                }
+                
+                logger.LogWarning("Database er ikke klar ennå. Venter 2 sekunder... (Forsøk {RetryCount}/{MaxRetries})", retryCount, maxRetries);
+                System.Threading.Thread.Sleep(2000); // Venter 2 sekunder
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "En kritisk feil oppstod under databasemigrering.");
+        // I produksjon bør applikasjonen stoppe hvis migrering feiler
+        throw;
+    }
+}
+
+// --------------------------------------------------------
 // Konfigurerer middleware og ruting for applikasjonen
 // --------------------------------------------------------
 if (!app.Environment.IsDevelopment())

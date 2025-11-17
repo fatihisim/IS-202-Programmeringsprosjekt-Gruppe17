@@ -8,13 +8,32 @@ using IS202.NrlApp.Models;
 
 namespace IS202.NrlApp.Controllers
 {
+    /// <summary>
+    /// Controller som håndterer alle operasjoner relatert til luftfartshindringer.
+    /// Inkluderer registrering, visning, godkjenning/avvisning og redigering av rapporter.
+    /// </summary>
     public class ObstacleController : Controller
     {
         private readonly AppDbContext _db;
 
+        /// <summary>
+        /// Konstruktør som injiserer databasekontekst.
+        /// </summary>
         public ObstacleController(AppDbContext db) => _db = db;
 
-        // Viser alle hindringer (tilgjengelig for alle)
+        /// <summary>
+        /// Returnerer nåværende tidspunkt i norsk tidssone (CET/CEST).
+        /// Konverterer fra UTC til Europa/Oslo tidssone.
+        /// </summary>
+        private DateTime GetNorwegianTime()
+        {
+            var norwegianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Oslo");
+            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, norwegianTimeZone);
+        }
+
+        /// <summary>
+        /// Viser alle hindringer med mulighet for filtrering (tilgjengelig for alle).
+        /// </summary>
         [HttpGet]
         public IActionResult List(string statusFilter = "", string typeFilter = "")
         {
@@ -51,7 +70,9 @@ namespace IS202.NrlApp.Controllers
             return View(filteredReports);
         }
 
-        // Viser bare brukerens egne hindringer (krever innlogging)
+        /// <summary>
+        /// Viser bare brukerens egne hindringer (krever innlogging).
+        /// </summary>
         [HttpGet]
         [Authorize]
         public IActionResult MyReports(string statusFilter = "", string typeFilter = "")
@@ -91,7 +112,10 @@ namespace IS202.NrlApp.Controllers
             return View(filteredReports);
         }
 
-        // Dashboard for Registerfører (bare Registerfører og Admin)
+        /// <summary>
+        /// Dashboard for Registerfører - viser alle rapporter med behandlingsverktøy.
+        /// Kun tilgjengelig for Registerfører og Admin.
+        /// </summary>
         [HttpGet]
         [Authorize]
         public IActionResult Dashboard(string statusFilter = "", string typeFilter = "")
@@ -142,7 +166,9 @@ namespace IS202.NrlApp.Controllers
             return View(filteredObstacles);
         }
 
-        // Godkjenner en rapport (bare Registerfører og Admin)
+        /// <summary>
+        /// Godkjenner en rapport (bare Registerfører og Admin).
+        /// </summary>
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
@@ -166,7 +192,7 @@ namespace IS202.NrlApp.Controllers
 
             obstacle.Status = "Approved";
             obstacle.ProcessedBy = User.Identity?.Name;
-            obstacle.ProcessedAt = DateTime.UtcNow;
+            obstacle.ProcessedAt = GetNorwegianTime();
             obstacle.Feedback = feedback;
 
             _db.SaveChanges();
@@ -175,7 +201,9 @@ namespace IS202.NrlApp.Controllers
             return RedirectToAction(nameof(Dashboard));
         }
 
-        // Avviser en rapport (bare Registerfører og Admin)
+        /// <summary>
+        /// Avviser en rapport (bare Registerfører og Admin).
+        /// </summary>
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
@@ -199,7 +227,7 @@ namespace IS202.NrlApp.Controllers
 
             obstacle.Status = "Rejected";
             obstacle.ProcessedBy = User.Identity?.Name;
-            obstacle.ProcessedAt = DateTime.UtcNow;
+            obstacle.ProcessedAt = GetNorwegianTime();
             obstacle.Feedback = feedback;
 
             _db.SaveChanges();
@@ -208,7 +236,9 @@ namespace IS202.NrlApp.Controllers
             return RedirectToAction(nameof(Dashboard));
         }
 
-        // Viser rapporterings-skjema (krever innlogging)
+        /// <summary>
+        /// Viser rapporterings-skjema med interaktivt kart (krever innlogging).
+        /// </summary>
         [HttpGet]
         [Authorize]
         public IActionResult DataForm()
@@ -216,7 +246,10 @@ namespace IS202.NrlApp.Controllers
             return View(new ObstacleData());
         }
 
-        // Mottar rapport fra bruker (krever innlogging)
+        /// <summary>
+        /// Mottar og lagrer en ny hindring fra pilot (krever innlogging).
+        /// Brukerinformasjon hentes automatisk fra claims.
+        /// </summary>
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
@@ -225,9 +258,9 @@ namespace IS202.NrlApp.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Henter bruker-informasjon automatisk
+            // Henter bruker-informasjon automatisk fra claims
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userName = User.Identity?.Name ?? "Unknown User";
+            var userName = User.FindFirstValue("FullName") ?? User.Identity?.Name ?? "Unknown User";
             var organization = User.FindFirstValue("Organization") ?? "Not specified";
 
             var entity = new Obstacle
@@ -242,7 +275,7 @@ namespace IS202.NrlApp.Controllers
                 GeoJsonData  = model.GeoJsonData,
                 UserId       = userId,
                 Status       = "Pending",
-                CreatedAt    = DateTime.UtcNow
+                CreatedAt    = GetNorwegianTime()
             };
 
             _db.Obstacles.Add(entity);
@@ -250,10 +283,12 @@ namespace IS202.NrlApp.Controllers
 
             TempData["Success"] = "Obstacle successfully registered and awaiting review.";
 
-            return RedirectToAction(nameof(List));
+            return RedirectToAction(nameof(MyReports));
         }
 
-        // Fullskjerm kartvisning
+        /// <summary>
+        /// Fullskjerm kartvisning av alle hindringer.
+        /// </summary>
         [HttpGet]
         public IActionResult Overview()
         {
@@ -264,7 +299,10 @@ namespace IS202.NrlApp.Controllers
             return View(data);
         }
 
-        // Viser redigeringsskjema for en hindring (krever innlogging)
+        /// <summary>
+        /// Viser redigeringsskjema for en hindring (krever innlogging).
+        /// Sjekker tillatelser basert på eierskap og rolle.
+        /// </summary>
         [HttpGet]
         [Authorize]
         public IActionResult Edit(int id)
@@ -310,7 +348,10 @@ namespace IS202.NrlApp.Controllers
             return View(model);
         }
 
-        // Håndterer redigering av en hindring (krever innlogging)
+        /// <summary>
+        /// Håndterer redigering av en hindring (krever innlogging).
+        /// Pilot-redigering av avvist rapport setter status tilbake til Pending.
+        /// </summary>
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
@@ -371,7 +412,7 @@ namespace IS202.NrlApp.Controllers
                 {
                     obstacle.Status = "Approved";
                     obstacle.ProcessedBy = User.Identity?.Name;
-                    obstacle.ProcessedAt = DateTime.UtcNow;
+                    obstacle.ProcessedAt = GetNorwegianTime();
                 }
                 TempData["Success"] = "Report updated and approved successfully.";
             }
@@ -382,7 +423,7 @@ namespace IS202.NrlApp.Controllers
 
             _db.SaveChanges();
             
-            // Rol bazlı redirect
+            // Rollebasert redirect
             if (userRole == "Registerfører" || userRole == "Admin")
             {
                 return RedirectToAction(nameof(Dashboard));
@@ -393,7 +434,10 @@ namespace IS202.NrlApp.Controllers
             }
         }
 
-        // Sletter en hindring (krever innlogging)
+        /// <summary>
+        /// Sletter en hindring (krever innlogging).
+        /// Piloter kan ikke slette godkjente rapporter.
+        /// </summary>
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
@@ -433,7 +477,7 @@ namespace IS202.NrlApp.Controllers
 
             TempData["Success"] = "Obstacle report deleted successfully.";
             
-            // Rol bazlı redirect
+            // Rollebasert redirect
             if (userRole == "Registerfører" || userRole == "Admin")
             {
                 return RedirectToAction(nameof(Dashboard));

@@ -333,10 +333,10 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Auto-dismiss alerts after 5 seconds
+        // Auto-dismiss toast notifications after 5 seconds (not modal alerts)
         $(document).ready(function() {
             setTimeout(function() {
-                $('.alert').fadeOut('slow', function() {
+                $('.toast-notification').fadeOut('slow', function() {
                     $(this).alert('close');
                 });
             }, 5000);

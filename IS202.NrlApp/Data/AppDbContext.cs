@@ -4,27 +4,37 @@ using IS202.NrlApp.Models;
 
 namespace IS202.NrlApp.Data
 {
-    // AppDbContext utvider IdentityDbContext for å inkludere brukere, roller og autentisering.
+    /// <summary>
+    /// AppDbContext utvider IdentityDbContext for å inkludere brukere, roller og autentisering.
+    /// Inneholder også applikasjonens domenemodeller som Obstacles.
+    /// </summary>
     public class AppDbContext : IdentityDbContext
     {
-        // Konstruktør som sender opsjoner til basisklassen (IdentityDbContext)
+        /// <summary>
+        /// Konstruktør som sender konfigurasjon til basisklassen (IdentityDbContext).
+        /// </summary>
+        /// <param name="options">Databasekonfigurasjon (tilkoblingsstreng, provider, osv.)</param>
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
         }
 
-        // DbSet for applikasjonens domene-modeller (for eksempel hinder på kartet)
+        /// <summary>
+        /// DbSet for luftfartshindringer rapportert til NRL.
+        /// Inneholder geometri, status, rapportør og behandlingsinformasjon.
+        /// </summary>
         public DbSet<Obstacle> Obstacles { get; set; }
 
-        // DbSet for registrerte brukere i systemet
-        public DbSet<User> Users { get; set; }
-
-        // Metode for å konfigurere databasen og relasjonene
+        /// <summary>
+        /// Konfigurerer databaseskjema og relasjoner mellom entiteter.
+        /// </summary>
+        /// <param name="modelBuilder">EF Core model builder for schemakonfigurasjon</param>
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Her kan man legge til spesielle konfigurasjoner eller standarddata senere.
+            // Eventuelle tilleggskonfigurasjoner for entiteter kan legges til her.
+            // For eksempel: indekser, standardverdier, eller spesielle datatyper.
         }
     }
 }

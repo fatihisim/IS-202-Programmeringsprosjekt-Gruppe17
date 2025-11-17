@@ -12,22 +12,6 @@
     </div>
 
     @* Bruker-informasjon kort *@
-    @if (User.Identity?.IsAuthenticated == true)
-    {
-        var userName = User.FindFirst("FullName")?.Value ?? User.Identity.Name;
-        
-        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            <div>
-                <strong>Reporting as:</strong> @userName
-                @if (User.HasClaim(c => c.Type == "Organization"))
-                {
-                    <span class="text-muted">(@User.FindFirst("Organization")?.Value)</span>
-                }
-            </div>
-        </div>
-    }
-
     @* Success feedback (TempData) *@
     @if (TempData["Success"] is string s && !string.IsNullOrWhiteSpace(s))
     {
