@@ -205,7 +205,7 @@ namespace IS202.NrlApp.Controllers
 
         /// <summary>
         /// Avviser en rapport. 
-        /// Kun Registerfører eller Admin. 
+        /// Kun Registerfører. 
         /// </summary>
         [HttpPost]
         [Authorize]
