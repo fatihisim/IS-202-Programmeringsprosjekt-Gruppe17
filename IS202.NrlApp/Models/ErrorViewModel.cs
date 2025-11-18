@@ -1,18 +1,12 @@
 namespace IS202.NrlApp.Models
 {
-    /// <summary>
-    /// Modell som brukes til å vise feilmeldinger i applikasjonen.
-    /// </summary>
+    /// Modell som brukes for å vise feilmeldinger som oppstår i applikasjonen.
     public class ErrorViewModel
     {
-        /// <summary>
-        /// ID for gjeldende forespørsel (brukes til feilsøking).
-        /// </summary>
+        /// Unik ID for aktuelle forespørselen. Nyttig når man skal feilsøke.
         public string? RequestId { get; set; }
 
-        /// <summary>
-        /// Angir om RequestId skal vises på feilsiden.
-        /// </summary>
+        /// Returnerer true hvis RequestId  finnes, slik at den kan vises på feilsiden.
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
     }
 }

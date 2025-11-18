@@ -1,80 +1,348 @@
 @model IS202.NrlApp.Models.ObstacleData
 @{
-    ViewData["Title"] = "Report Obstacle";
+    ViewData["Title"] = "Report an Obstacle";
 }
 
-<h2 class="mb-4">Report an Obstacle</h2>
-
-<div class="col-lg-6 mx-auto">
-<form asp-action="DataForm" method="post">
-
-    <div class="mb-3">
-        <label asp-for="ReporterName" class="form-label fw-semibold d-block"></label>
-        <input asp-for="ReporterName" class="form-control" />
-        <span asp-validation-for="ReporterName" class="text-danger small"></span>
+<div class="container my-4">
+    <div class="mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-geo-alt-fill me-2 text-success"></i>Report an Obstacle
+        </h2>
+        <p class="text-muted mb-0">Submit a new obstacle report to NRL</p>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Organization" class="form-label fw-semibold d-block"></label>
-        <input asp-for="Organization" class="form-control" />
-        <span asp-validation-for="Organization" class="text-danger small"></span>
-    </div>
+    @* Bruker-informasjon kort *@
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        var userName = User.FindFirst("FullName")?.Value ?? User.Identity.Name;
+        
+        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <div>
+                <strong>Reporting as:</strong> @userName
+                @if (User.HasClaim(c => c.Type == "Organization"))
+                {
+                    <span class="text-muted">(@User.FindFirst("Organization")?.Value)</span>
+                }
+            </div>
+        </div>
+    }
 
-    <div class="mb-3">
-        <label asp-for="ObstacleType" class="form-label fw-semibold d-block"></label>
-        <select asp-for="ObstacleType" class="form-select">
-            <option value="">-- Select Type --</option>
-            <option>Mast</option>
-            <option>Power line</option>
-            <option>Crane</option>
-        </select>
-        <span asp-validation-for="ObstacleType" class="text-danger small"></span>
-    </div>
+    @* Success feedback (TempData) *@
+    @if (TempData["Success"] is string s && !string.IsNullOrWhiteSpace(s))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@s
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-    <div class="mb-3">
-        <label asp-for="Comment" class="form-label fw-semibold d-block"></label>
-        <textarea asp-for="Comment" class="form-control" rows="3"></textarea>
-    </div>
+    @* Validation summary *@
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert" style="display:none"></div>
 
-    <div class="mb-3">
-        <label asp-for="Latitude" class="form-label fw-semibold d-block"></label>
-        <input asp-for="Latitude" id="Latitude" class="form-control" />
-        <span asp-validation-for="Latitude" class="text-danger small"></span>
-    </div>
+    <div class="row g-4">
+        <!-- Form column -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form asp-action="DataForm" method="post" novalidate>
+                        @Html.AntiForgeryToken()
 
-    <div class="mb-3">
-        <label asp-for="Longitude" class="form-label fw-semibold d-block"></label>
-        <input asp-for="Longitude" id="Longitude" class="form-control" />
-        <span asp-validation-for="Longitude" class="text-danger small"></span>
-    </div>
+                        <div class="mb-3">
+                            <label asp-for="ObstacleType" class="form-label">
+                                Obstacle type <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="ObstacleType" class="form-select" required>
+                                <option value="">-- Select type --</option>
+                                <option>Crane</option>
+                                <option>Mast</option>
+                                <option>Power line</option>
+                                <option>Tower</option>
+                                <option>Building</option>
+                                <option>Other</option>
+                            </select>
+                            <span asp-validation-for="ObstacleType" class="text-danger"></span>
+                        </div>
 
-    <div class="mb-3">
-        <div id="map" style="height:360px;border:1px solid #ddd;border-radius:8px;"></div>
-        <small class="text-muted d-block mt-1">Click the map to fill Latitude/Longitude.</small>
-    </div>
+                        <div class="mb-3">
+                            <label asp-for="Comment" class="form-label">Comment (optional)</label>
+                            <textarea asp-for="Comment" class="form-control" rows="3" 
+                                      placeholder="Short description, height if known, nearby reference..."></textarea>
+                            <span asp-validation-for="Comment" class="text-danger"></span>
+                        </div>
 
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+                        <div class="row">
+                            <div class="col-12 col-sm-6 mb-3">
+                                <label asp-for="Latitude" class="form-label">Latitude</label>
+                                <input asp-for="Latitude" class="form-control" placeholder="Click the map" readonly />
+                                <span asp-validation-for="Latitude" class="text-danger"></span>
+                            </div>
+                            <div class="col-12 col-sm-6 mb-3">
+                                <label asp-for="Longitude" class="form-label">Longitude</label>
+                                <input asp-for="Longitude" class="form-control" placeholder="Click the map" readonly />
+                                <span asp-validation-for="Longitude" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Hidden fields -->
+                        <input type="hidden" asp-for="GeometryType" />
+                        <input type="hidden" asp-for="GeoJsonData" />
+
+                        <div class="mb-3">
+                            <button type="button" id="geoBtn" class="btn btn-primary">
+                                <i class="bi bi-geo-alt-fill me-1"></i> Use my location
+                            </button>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-send-fill me-1"></i> Submit Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-lightbulb"></i> Use the map toolbar to draw: line (━) for cables/wires, area (⬟) for buildings, circle (⭕) for zones, or point (📍) for towers. You can edit or delete shapes using the toolbar buttons.
+            </small>
+        </div>
+
+        <!-- Map column -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <i class="bi bi-map me-2"></i>Map
+                </div>
+                <div class="card-body p-0">
+                    <div id="reportMap" style="height: 500px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script>
-        const map = L.map('map').setView([58.146, 7.995], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
 
-        let marker;
-        map.on('click', (e) => {
-            const lat = e.latlng.lat.toFixed(6);
-            const lng = e.latlng.lng.toFixed(6);
-            document.getElementById('Latitude').value = lat;
-            document.getElementById('Longitude').value = lng;
-            if (marker) marker.setLatLng([lat, lng]);
-            else marker = L.marker([lat, lng]).addTo(map);
-        });
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Leaflet.draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Leaflet.draw JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    <script>
+        (function () {
+            const latInput = document.getElementById("Latitude");
+            const lonInput = document.getElementById("Longitude");
+            const geoTypeInput = document.getElementById("GeometryType");
+            const geoJsonInput = document.getElementById("GeoJsonData");
+            const geoBtn = document.getElementById("geoBtn");
+
+            // Initialiserer kart (sentrert rundt Kristiansand)
+            const map = L.map('reportMap').setView([58.146, 7.995], 12);
+            
+            // Base layer: Satellite imagery (Esri World Imagery)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+            }).addTo(map);
+            
+            // Overlay: OpenStreetMap labels (semi-transparent for hybrid view)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                opacity: 0.4,  // Semi-transparent labels
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Forhindrer utilsiktet zoom ved scrolling
+            map.scrollWheelZoom.disable();
+            map.on('focus', () => map.scrollWheelZoom.enable());
+            map.on('blur',  () => map.scrollWheelZoom.disable());
+
+            // FeatureGroup for tegninger
+            const drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            // Leaflet.draw kontroller
+            const drawControl = new L.Control.Draw({
+                draw: {
+                    polyline: {
+                        shapeOptions: {
+                            color: '#f357a1',
+                            weight: 4
+                        }
+                    },
+                    polygon: {
+                        shapeOptions: {
+                            color: '#3388ff',
+                            weight: 3
+                        }
+                    },
+                    circle: {
+                        shapeOptions: {
+                            color: '#ff7800',
+                            weight: 3
+                        }
+                    },
+                    rectangle: false,  // Rectangle deaktivert
+                    marker: {
+                        icon: new L.Icon.Default()
+                    },
+                    circlemarker: false
+                },
+                edit: {
+                    featureGroup: drawnItems,
+                    remove: true
+                }
+            });
+            map.addControl(drawControl);
+
+            // Når en form tegnes
+            map.on(L.Draw.Event.CREATED, function (event) {
+                const layer = event.layer;
+                const type = event.layerType;
+                
+                // Fjern tidligere tegninger
+                drawnItems.clearLayers();
+                
+                // Legg til ny tegning
+                drawnItems.addLayer(layer);
+                
+                // Konverter til GeoJSON og lagre
+                const geoJson = layer.toGeoJSON();
+                
+                if (type === 'marker') {
+                    // Point
+                    const latlng = layer.getLatLng();
+                    latInput.value = latlng.lat.toFixed(6);
+                    lonInput.value = latlng.lng.toFixed(6);
+                    geoTypeInput.value = 'Point';
+                    geoJsonInput.value = JSON.stringify(geoJson.geometry);
+                } else if (type === 'polyline') {
+                    // LineString
+                    const latlngs = layer.getLatLngs();
+                    if (latlngs.length > 0) {
+                        latInput.value = latlngs[0].lat.toFixed(6);
+                        lonInput.value = latlngs[0].lng.toFixed(6);
+                    }
+                    geoTypeInput.value = 'LineString';
+                    geoJsonInput.value = JSON.stringify(geoJson.geometry);
+                } else if (type === 'polygon') {
+                    // Polygon
+                    const latlngs = layer.getLatLngs()[0]; // First ring
+                    if (latlngs.length > 0) {
+                        latInput.value = latlngs[0].lat.toFixed(6);
+                        lonInput.value = latlngs[0].lng.toFixed(6);
+                    }
+                    geoTypeInput.value = 'Polygon';
+                    geoJsonInput.value = JSON.stringify(geoJson.geometry);
+                } else if (type === 'circle') {
+                    // Circle (converted to Point with radius)
+                    const latlng = layer.getLatLng();
+                    const radius = layer.getRadius();
+                    latInput.value = latlng.lat.toFixed(6);
+                    lonInput.value = latlng.lng.toFixed(6);
+                    geoTypeInput.value = 'Circle';
+                    // Store circle as Point with radius property
+                    geoJsonInput.value = JSON.stringify({
+                        type: "Point",
+                        coordinates: [parseFloat(latlng.lng.toFixed(6)), parseFloat(latlng.lat.toFixed(6))],
+                        properties: { radius: radius }
+                    });
+                }
+            });
+
+            // Når en form redigeres
+            map.on(L.Draw.Event.EDITED, function (event) {
+                const layers = event.layers;
+                layers.eachLayer(function (layer) {
+                    const geoJson = layer.toGeoJSON();
+                    
+                    if (layer instanceof L.Marker) {
+                        const latlng = layer.getLatLng();
+                        latInput.value = latlng.lat.toFixed(6);
+                        lonInput.value = latlng.lng.toFixed(6);
+                    } else if (layer instanceof L.Circle) {
+                        const latlng = layer.getLatLng();
+                        const radius = layer.getRadius();
+                        latInput.value = latlng.lat.toFixed(6);
+                        lonInput.value = latlng.lng.toFixed(6);
+                        geoJsonInput.value = JSON.stringify({
+                            type: "Point",
+                            coordinates: [parseFloat(latlng.lng.toFixed(6)), parseFloat(latlng.lat.toFixed(6))],
+                            properties: { radius: radius }
+                        });
+                        return; // Skip default geoJson assignment
+                    } else if (layer instanceof L.Polygon) {
+                        const latlngs = layer.getLatLngs()[0];
+                        if (latlngs.length > 0) {
+                            latInput.value = latlngs[0].lat.toFixed(6);
+                            lonInput.value = latlngs[0].lng.toFixed(6);
+                        }
+                    } else if (layer instanceof L.Polyline) {
+                        const latlngs = layer.getLatLngs();
+                        if (latlngs.length > 0) {
+                            latInput.value = latlngs[0].lat.toFixed(6);
+                            lonInput.value = latlngs[0].lng.toFixed(6);
+                        }
+                    }
+                    
+                    geoJsonInput.value = JSON.stringify(geoJson.geometry);
+                });
+            });
+
+            // Når en form slettes
+            map.on(L.Draw.Event.DELETED, function () {
+                latInput.value = '';
+                lonInput.value = '';
+                geoTypeInput.value = '';
+                geoJsonInput.value = '';
+            });
+
+            // "Use my location" knapp (legger til en markør)
+            geoBtn?.addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by your browser.');
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        const { latitude, longitude } = pos.coords;
+                        
+                        // Fjern tidligere tegninger
+                        drawnItems.clearLayers();
+                        
+                        // Legg til ny markør
+                        const marker = L.marker([latitude, longitude]);
+                        drawnItems.addLayer(marker);
+                        
+                        // Oppdater input
+                        latInput.value = latitude.toFixed(6);
+                        lonInput.value = longitude.toFixed(6);
+                        geoTypeInput.value = 'Point';
+                        geoJsonInput.value = JSON.stringify({
+                            type: "Point",
+                            coordinates: [parseFloat(longitude.toFixed(6)), parseFloat(latitude.toFixed(6))]
+                        });
+                        
+                        map.setView([latitude, longitude], 15);
+                    },
+                    err => alert('Could not get location: ' + err.message),
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            });
+
+            // Viser validation summary bare hvis det er feil
+            const vs = document.querySelector('[asp-validation-summary="ModelOnly"]');
+            if (vs && vs.innerText.trim().length > 0) vs.style.display = 'block';
+        })();
     </script>
 }
-

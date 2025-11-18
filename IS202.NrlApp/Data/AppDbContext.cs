@@ -1,22 +1,30 @@
-using IS202.NrlApp.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using IS202.NrlApp.Models;
 
 namespace IS202.NrlApp.Data
 {
-    /// <summary>
-    /// Representerer applikasjonens databasekontekst.
-    /// Håndterer lagring og henting av data via Entity Framework Core.
-    /// </summary>
-    public class AppDbContext : DbContext
+    // AppDbContext utvider IdentityDbContext for å inkludere brukere, roller og autentisering.
+    public class AppDbContext : IdentityDbContext
     {
-        /// <summary>
-        /// Initialiserer databasekonteksten med konfigurerte alternativer.
-        /// </summary>
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        // Konstruktør som sender databasedigutasjonen videre til IdentityDbContext
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
+        {
+        }
 
-        /// <summary>
-        /// Tabell (DbSet) som lagrer alle hindringsdata.
-        /// </summary>
-        public DbSet<Obstacle> Obstacles => Set<Obstacle>();
+        // Tabell for lagring av hindere (f.eks. master, bygg, objekter på kartet)
+        public DbSet<Obstacle> Obstacles { get; set; }
+
+        // Tabell for applikasjonens brukere (utvidet fra IdentityUser)
+        public DbSet<User> Users { get; set; }
+
+        // Metode for å konfigurere databasen og relasjonene
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Tilpasset konfigurasjon kan legges her dersom det trens
+        }
     }
 }

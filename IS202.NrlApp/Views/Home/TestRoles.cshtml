@@ -1,0 +1,138 @@
+@{
+    ViewData["Title"] = "Test Roles & Claims";
+}
+
+<div class="container my-4">
+    <h2><i class="bi bi-shield-check me-2"></i>User Roles & Claims Test</h2>
+    <p class="text-muted">This page shows your user information and roles for testing purposes.</p>
+
+    <div class="row g-3">
+        <!-- User Information Card -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-person-badge me-2"></i>User Information
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <th style="width: 40%;">User ID:</th>
+                                <td><code>@ViewBag.UserId</code></td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td><strong>@ViewBag.Email</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Full Name:</th>
+                                <td>@ViewBag.FullName</td>
+                            </tr>
+                            <tr>
+                                <th>Role:</th>
+                                <td>
+                                    @if (ViewBag.Role == "Registerfører" || ViewBag.Role == "Admin")
+                                    {
+                                        <span class="badge bg-danger">@ViewBag.Role</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-primary">@ViewBag.Role</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Organization:</th>
+                                <td>@ViewBag.Organization</td>
+                            </tr>
+                            <tr>
+                                <th>Phone Number:</th>
+                                <td>@ViewBag.PhoneNumber</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Claims Card -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-list-ul me-2"></i>All Claims
+                </div>
+                <div class="card-body">
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Claim Type</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var claim in ViewBag.AllClaims)
+                                {
+                                    <tr>
+                                        <td><small><code>@claim.Type</code></small></td>
+                                        <td><small>@claim.Value</small></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Results -->
+    <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <i class="bi bi-check-circle me-2"></i>Role Test Results
+        </div>
+        <div class="card-body">
+            <h5>Expected Behavior Based on Role:</h5>
+            
+            @if (ViewBag.Role == "Pilot")
+            {
+                <div class="alert alert-primary">
+                    <strong>✅ Pilot Role Detected</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Can create obstacle reports</li>
+                        <li>Can edit/delete own reports</li>
+                        <li>Can view all reports (list and map)</li>
+                        <li>Cannot access Dashboard</li>
+                        <li>Cannot approve/reject reports</li>
+                    </ul>
+                </div>
+            }
+            else if (ViewBag.Role == "Registerfører" || ViewBag.Role == "Admin")
+            {
+                <div class="alert alert-danger">
+                    <strong>✅ @ViewBag.Role Role Detected</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Can create obstacle reports</li>
+                        <li>Can edit/delete ALL reports</li>
+                        <li>Can view all reports (list and map)</li>
+                        <li><strong>Can access Dashboard</strong></li>
+                        <li><strong>Can approve/reject reports</strong></li>
+                    </ul>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    <strong>⚠️ Unknown Role: @ViewBag.Role</strong>
+                    <p class="mb-0">This role is not configured correctly.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="mt-4 text-center">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary">
+            <i class="bi bi-house-door me-2"></i>Back to Home
+        </a>
+    </div>
+</div>

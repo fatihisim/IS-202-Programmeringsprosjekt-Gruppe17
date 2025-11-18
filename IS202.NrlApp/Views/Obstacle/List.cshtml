@@ -1,73 +1,347 @@
 @model IEnumerable<IS202.NrlApp.Models.Obstacle>
-@using System.Globalization
-
+@using System.Text.Json
+@using System.Security.Claims
 @{
-    ViewData["Title"] = "Obstacle List";
+    ViewData["Title"] = "All Reports";
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var currentUserRole = User.FindFirst("Role")?.Value;
+    var isAdmin = currentUserRole == "Registerfører" || currentUserRole == "Admin";
+    
+    var statusFilter = ViewBag.StatusFilter as string ?? "";
+    var typeFilter = ViewBag.TypeFilter as string ?? "";
+    
+    // İstatistikler ViewBag'den
+    var totalCount = ViewBag.TotalCount ?? 0;
+    var pendingCount = ViewBag.PendingCount ?? 0;
+    var approvedCount = ViewBag.ApprovedCount ?? 0;
+    var rejectedCount = ViewBag.RejectedCount ?? 0;
 }
 
-<h2 class="mb-4">@ViewData["Title"]</h2>
+<div class="container my-4">
+    <!-- Header -->
+    <div class="mb-4">
+        <h2 class="mb-0"><i class="bi bi-list-task me-2"></i>All Reports</h2>
+        <p class="text-muted mb-0">View all obstacle reports from all users</p>
+    </div>
 
-<a asp-controller="Obstacle" asp-action="DataForm" class="btn btn-primary mb-3">New report</a>
+    @if (totalCount == 0)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            No obstacle reports found. Be the first to <a asp-action="DataForm" class="alert-link">create a report</a>!
+        </div>
+    }
+    else
+    {
+        <!-- Summary stats -->
+        <div class="row g-2 mb-3">
+            <div class="col-md-3">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Total Reports</small>
+                        <h4 class="mb-0">@totalCount</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-warning shadow-sm">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Pending</small>
+                        <h4 class="mb-0 text-warning">@pendingCount</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-success shadow-sm">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Approved</small>
+                        <h4 class="mb-0 text-success">@approvedCount</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-danger shadow-sm">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Rejected</small>
+                        <h4 class="mb-0 text-danger">@rejectedCount</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<table class="table table-bordered table-striped table-hover shadow-sm">
-    <thead class="table-dark">
-        <tr>
-            <th>Reporter</th>
-            <th>Organization</th>
-            <th>Type</th>
-            <th>Comment</th>
-            <th>Latitude</th>
-            <th>Longitude</th>
-            <th>Created</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.ReporterName</td>
-                <td>@item.Organization</td>
-                <td>@item.ObstacleType</td>
-                <td>@item.Comment</td>
-                <td>@item.Latitude?.ToString("F5", CultureInfo.InvariantCulture)</td>
-                <td>@item.Longitude?.ToString("F5", CultureInfo.InvariantCulture)</td>
-                <td>@item.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
-            </tr>
-        }
-    </tbody>
-</table>
+        <!-- Filtreleme -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <form method="get" asp-action="List" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="statusFilter" class="form-label fw-semibold">Status</label>
+                        <select name="statusFilter" id="statusFilter" class="form-select">
+                            <option value="" selected="@(string.IsNullOrEmpty(statusFilter))">All Statuses</option>
+                            <option value="Pending" selected="@(statusFilter == "Pending")">Pending</option>
+                            <option value="Approved" selected="@(statusFilter == "Approved")">Approved</option>
+                            <option value="Rejected" selected="@(statusFilter == "Rejected")">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="typeFilter" class="form-label fw-semibold">Obstacle Type</label>
+                        <select name="typeFilter" id="typeFilter" class="form-select">
+                            <option value="">All Types</option>
+                            <option value="Crane" selected="@(typeFilter == "Crane")">Crane</option>
+                            <option value="Mast" selected="@(typeFilter == "Mast")">Mast</option>
+                            <option value="Power line" selected="@(typeFilter == "Power line")">Power line</option>
+                            <option value="Tower" selected="@(typeFilter == "Tower")">Tower</option>
+                            <option value="Building" selected="@(typeFilter == "Building")">Building</option>
+                            <option value="Other" selected="@(typeFilter == "Other")">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel-fill me-1"></i> Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-<h3 class="mt-5 mb-3">Map View</h3>
-<div id="map" style="height:400px;width:100%;border:1px solid #ddd;border-radius:8px;"></div>
+        <!-- Table -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table me-2"></i>Reports Table</span>
+                <span class="badge bg-secondary">
+                    @if (Model.Count() < totalCount)
+                    {
+                        @:Showing @Model.Count() of @totalCount reports
+                    }
+                    else
+                    {
+                        @:@totalCount reports
+                    }
+                </span>
+            </div>
+            <div class="table-responsive">
+                <table id="obstacleTable" class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th>Reporter</th>
+                            <th>Organization</th>
+                            <th>Type</th>
+                            <th style="width: 100px;">Status</th>
+                            <th>Comment</th>
+                            <th class="text-end">Location</th>
+                            <th class="text-nowrap">Created</th>
+                            @if (isAdmin)
+                            {
+                                <th style="width: 120px;">Actions</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="@(isAdmin ? "9" : "8")" class="text-center py-5">
+                                <i class="bi bi-search text-muted display-4 d-block mb-3"></i>
+                                <h5 class="text-muted">No reports found with the current filters</h5>
+                                <p class="text-muted">Try adjusting your filter criteria or 
+                                    <a asp-action="List">clear all filters</a>
+                                </p>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                    @foreach (var o in Model)
+                    {
+                        var lat = o.Latitude?.ToString("F6");
+                        var lon = o.Longitude?.ToString("F6");
+                        
+                        // Sjekker om brukeren kan redigere/slette denne rapporten
+                        var canEdit = isAdmin || (o.UserId == currentUserId);
+
+                        var statusBadgeClass = o.Status switch
+                        {
+                            "Pending" => "bg-warning text-dark",
+                            "Approved" => "bg-success",
+                            "Rejected" => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr data-lat="@lat" data-lon="@lon">
+                            <td><strong>@o.Id</strong></td>
+                            <td>@o.ReporterName</td>
+                            <td>@o.Organization</td>
+                            <td><span class="badge bg-secondary">@o.ObstacleType</span></td>
+                            <td>
+                                <span class="badge @statusBadgeClass">@o.Status</span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(o.Comment))
+                                {
+                                    @(o.Comment.Length > 50 ? o.Comment.Substring(0, 50) + "..." : o.Comment)
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (lat != null && lon != null)
+                                {
+                                    <small>@lat, @lon</small>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td><small>@o.CreatedAt.ToString("yyyy-MM-dd HH:mm")</small></td>
+                            @if (isAdmin)
+                            {
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-action="Edit" asp-route-id="@o.Id" 
+                                           class="btn btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="confirmDelete(@o.Id, '@o.ObstacleType')" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Hidden delete form -->
+                                    <form id="delete-form-@o.Id" asp-action="Delete" asp-route-id="@o.Id" 
+                                          method="post" style="display:none;">
+                                        @Html.AntiForgeryToken()
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-map me-2"></i>Map Overview</span>
+                <span class="badge bg-primary">@Model.Count() reports</span>
+            </div>
+            <div class="card-body p-0">
+                <div id="listMap" style="height: 460px;"></div>
+            </div>
+        </div>
+    }
+</div>
 
 @section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <script>
-        // Initialize map
-        const map = L.map('map').setView([58.1467, 7.9956], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        const bounds = [];
-        @foreach (var o in Model)
-        {
-            if (o.Latitude.HasValue && o.Longitude.HasValue)
-            {
-                var lat = o.Latitude.Value.ToString(CultureInfo.InvariantCulture);
-                var lng = o.Longitude.Value.ToString(CultureInfo.InvariantCulture);
-                var type = o.ObstacleType ?? "Obstacle";
-                var comment = o.Comment ?? "";
-                var who = o.ReporterName ?? "";
-                var org = o.Organization ?? "";
-
-                @:L.marker([@lat, @lng]).addTo(map)
-                @:.bindPopup(`<b>@type</b><br/>@comment<br/><small>@who — @org</small>`);
-                @:bounds.push([@lat, @lng]);
+        // ---- Delete confirmation
+        function confirmDelete(id, obstacleType) {
+            if (confirm(`Are you sure you want to delete this ${obstacleType} report?\n\nThis action cannot be undone.`)) {
+                document.getElementById('delete-form-' + id).submit();
             }
         }
-        if (bounds.length) {
-            map.fitBounds(bounds, { padding: [30, 30] });
-        }
+
+        // ---- Leaflet map + row interactions
+        (function () {
+            const obstacles = @Html.Raw(JsonSerializer.Serialize(
+                Model.Select(m => new {
+                    m.Id,
+                    m.ReporterName, 
+                    m.Organization, 
+                    m.ObstacleType, 
+                    m.Comment,
+                    m.Status,
+                    Lat = m.Latitude, 
+                    Lon = m.Longitude
+                })
+            ));
+
+            const map = L.map('listMap').setView([58.146, 7.995], 12);
+            
+            // Satellite base
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri'
+            }).addTo(map);
+            
+            // Labels overlay
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                opacity: 0.4,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            const markers = [];
+            const markerByKey = {};
+
+            // Define marker colors based on status
+            const getMarkerIcon = (status) => {
+                const color = status === 'Approved' ? 'green' : 
+                              status === 'Rejected' ? 'red' : 
+                              'orange'; // Pending
+                
+                return L.icon({
+                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                });
+            };
+
+            obstacles.forEach(o => {
+                if (o.Lat != null && o.Lon != null) {
+                    const icon = getMarkerIcon(o.Status);
+                    const m = L.marker([o.Lat, o.Lon], { icon: icon }).addTo(map);
+                    
+                    const statusBadge = o.Status === 'Approved' ? '✅' : 
+                                       o.Status === 'Rejected' ? '❌' : '⏳';
+                    
+                    m.bindPopup(
+                        `<strong>${o.ObstacleType ?? 'Obstacle'}</strong> ${statusBadge}<br/>
+                         <small>ID: ${o.Id} | Status: ${o.Status}</small><br/>
+                         ${o.ReporterName ?? ''} – ${o.Organization ?? ''}<br/>
+                         <em>${o.Comment ?? ''}</em>`
+                    );
+                    markers.push(m);
+                    const key = `${Number(o.Lat).toFixed(6)},${Number(o.Lon).toFixed(6)}`;
+                    markerByKey[key] = m;
+                }
+            });
+
+            if (markers.length > 0) {
+                const group = L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.2));
+            }
+
+            // Table row -> marker focus
+            document.querySelectorAll('#obstacleTable tbody tr').forEach(tr => {
+                const lat = tr.dataset.lat, lon = tr.dataset.lon;
+                if (!lat || !lon) return;
+                const key = `${lat},${lon}`;
+                const m = markerByKey[key];
+                if (!m) return;
+
+                tr.addEventListener('mouseenter', () => m.openPopup());
+                tr.addEventListener('mouseleave', () => m.closePopup());
+                tr.addEventListener('click', () => {
+                    const pos = m.getLatLng();
+                    map.setView(pos, Math.max(map.getZoom(), 14), { animate: true });
+                    m.openPopup();
+                });
+            });
+        })();
     </script>
 }

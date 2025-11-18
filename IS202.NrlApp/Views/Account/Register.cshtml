@@ -1,0 +1,149 @@
+@model IS202.NrlApp.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="container mt-5" style="max-width: 500px;">
+    <h2 class="text-center mb-4">Create Your Account</h2>
+
+    <!-- Denne formen lar brukeren opprette en ny konto -->
+    <form asp-action="Register" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <!-- Full Name -->
+        <div class="form-group mb-3">
+            <label asp-for="FullName" class="form-label">
+                Full Name <span class="text-danger">*</span>
+            </label>
+            <input asp-for="FullName" class="form-control" placeholder="Enter your full name" />
+            <span asp-validation-for="FullName" class="text-danger"></span>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group mb-3">
+            <label asp-for="Email" class="form-label">
+                Email <span class="text-danger">*</span>
+            </label>
+            <input asp-for="Email" class="form-control" placeholder="Enter your email" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <!-- Password with eye icon -->
+        <div class="form-group mb-3">
+            <label asp-for="Password" class="form-label">
+                Password <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+                <input asp-for="Password" type="password" class="form-control" id="Password" placeholder="Enter a password" />
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                    <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                </button>
+            </div>
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+
+        <!-- Confirm Password with eye icon -->
+        <div class="form-group mb-3">
+            <label asp-for="ConfirmPassword" class="form-label">
+                Confirm Password <span class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+                <input asp-for="ConfirmPassword" type="password" class="form-control" id="ConfirmPassword" placeholder="Confirm your password" />
+                <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                    <i class="bi bi-eye" id="toggleConfirmPasswordIcon"></i>
+                </button>
+            </div>
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
+
+        <!-- Phone Number -->
+        <div class="form-group mb-3">
+            <label asp-for="PhoneNumber" class="form-label">
+                Phone Number <span class="text-danger">*</span>
+            </label>
+            <input asp-for="PhoneNumber" class="form-control" placeholder="Enter your phone number" />
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+
+        <!-- User Role -->
+        <div class="form-group mb-3">
+            <label asp-for="Role" class="form-label">
+                Role <span class="text-danger">*</span>
+            </label>
+            <select asp-for="Role" class="form-select">
+                <option value="">-- Select Role --</option>
+                <option value="Pilot">Pilot</option>
+                <option value="Registerfører">Registerfører (NRL Officer)</option>
+                <option value="Admin">Admin</option>
+            </select>
+            <span asp-validation-for="Role" class="text-danger"></span>
+        </div>
+
+        <!-- Organization -->
+        <div class="form-group mb-4">
+            <label asp-for="Organization" class="form-label">
+                Organization <span class="text-muted small">(optional)</span>
+            </label>
+            <input asp-for="Organization" class="form-control" placeholder="Enter your organization (optional)" />
+            <span asp-validation-for="Organization" class="text-danger"></span>
+        </div>
+
+        <!-- Register button -->
+        <div class="d-grid">
+            <button type="submit" class="btn btn-primary btn-lg">Register</button>
+        </div>
+
+        <div class="text-center mt-3">
+            <p>Already have an account? <a asp-controller="Account" asp-action="Login">Log in here</a></p>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Password toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle Password
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('Password');
+            const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+            if (togglePassword && passwordInput && togglePasswordIcon) {
+                togglePassword.addEventListener('click', function() {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    if (type === 'text') {
+                        togglePasswordIcon.classList.remove('bi-eye');
+                        togglePasswordIcon.classList.add('bi-eye-slash');
+                    } else {
+                        togglePasswordIcon.classList.remove('bi-eye-slash');
+                        togglePasswordIcon.classList.add('bi-eye');
+                    }
+                });
+            }
+
+            // Toggle Confirm Password
+            const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+            const confirmPasswordInput = document.getElementById('ConfirmPassword');
+            const toggleConfirmPasswordIcon = document.getElementById('toggleConfirmPasswordIcon');
+
+            if (toggleConfirmPassword && confirmPasswordInput && toggleConfirmPasswordIcon) {
+                toggleConfirmPassword.addEventListener('click', function() {
+                    const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    confirmPasswordInput.setAttribute('type', type);
+                    
+                    if (type === 'text') {
+                        toggleConfirmPasswordIcon.classList.remove('bi-eye');
+                        toggleConfirmPasswordIcon.classList.add('bi-eye-slash');
+                    } else {
+                        toggleConfirmPasswordIcon.classList.remove('bi-eye-slash');
+                        toggleConfirmPasswordIcon.classList.add('bi-eye');
+                    }
+                });
+            }
+        });
+    </script>
+}
