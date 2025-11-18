@@ -7,8 +7,9 @@ using System.Security.Claims;
 namespace IS202.NrlApp.Controllers
 {
     /// <summary>
-    /// Controller som håndterer brukerautentisering (registrering, innlogging, utlogging).
-    /// Bruker ASP.NET Core Identity for sikker passordbehandling og sesjoner.
+    /// Controller som håndterer all brukerautentiserig:
+    /// registrering, innlogging og utlogging. 
+    /// Benytter ASP.NET Core Identity for sikker håndtering av passord og sesjoner. 
     /// </summary>
     public class AccountController : Controller
     {
@@ -17,7 +18,7 @@ namespace IS202.NrlApp.Controllers
         private readonly AppDbContext _db;
 
         /// <summary>
-        /// Konstruktør som injiserer UserManager, SignInManager og databasekontekst.
+        /// Konstruktør som mottar UserManager, SignInManager, AppDbContext via dependency injection.  
         /// </summary>
         public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, AppDbContext db)
         {
@@ -28,24 +29,24 @@ namespace IS202.NrlApp.Controllers
 
         /// <summary>
         /// Viser innloggingssiden (GET).
-        /// Hvis brukeren allerede er logget inn, omdirigeres de til startsiden.
+        /// Dersom brukeren allerede er innlogget, sendes de til forsiden. 
         /// </summary>
         [HttpGet]
         public IActionResult Login()
         {
-            // Hvis brukeren allerede er logget inn, send til hjem
+            // Hvis brukeren allerede er innlogget, send videre til hjemmesiden
             if (User.Identity?.IsAuthenticated == true)
             {
                 return RedirectToAction("Index", "Home");
             }
             
-            // Send til startsiden hvor login-skjemaet er
+            // Vis forsiden der innloggingsskjemaet er plassert 
             return RedirectToAction("Index", "Home");
         }
 
         /// <summary>
-        /// Håndterer innlogging (POST).
-        /// Validerer brukernavn og passord, og sjekker om brukeren har nye tilbakemeldinger.
+        /// Håndterer forsøk på innlogging (POST).
+        /// Validerer brukernavn og passord, og sjekker om brukeren har tilbakemeldinger.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -57,7 +58,7 @@ namespace IS202.NrlApp.Controllers
 
                 if (result.Succeeded)
                 {
-                    // Sjekker om brukeren har nye tilbakemeldinger fra NRL-behandlere
+                    // Henter bruker og sjekket om det finnes nye tilbakemeldinger på rapporter
                     var user = await _userManager.FindByEmailAsync(model.Email);
                     if (user != null)
                     {
@@ -77,7 +78,7 @@ namespace IS202.NrlApp.Controllers
                     
                     return RedirectToAction("Index", "Home");
                 }
-
+               /// Feil brukernavn eller passord 
                 ModelState.AddModelError(string.Empty, "Invalid email or password");
             }
 
@@ -96,9 +97,8 @@ namespace IS202.NrlApp.Controllers
 
         /// <summary>
         /// Håndterer brukerregistrering (POST).
-        /// Oppretter ny bruker, legger til claims (FullName, Role, Organization, PhoneNumber),
-        /// og logger brukeren inn automatisk.
-        /// Omdirigerer basert på brukerens rolle etter vellykket registrering.
+        /// Oppretter en ny bruker, legger til nødvendige claims (FullName, Role, Organization, PhoneNumber),
+        /// logger brukeren inn automatisk, og omdirigerer basert på brukerens rolle. 
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -112,18 +112,18 @@ namespace IS202.NrlApp.Controllers
 
                 if (result.Succeeded)
                 {
-                    // Legger til claims for tilleggsinformasjon om brukeren
+                    // Legger til ekstra brukerdata som claims 
                     await _userManager.AddClaimAsync(user, new Claim("FullName", model.FullName));
                     await _userManager.AddClaimAsync(user, new Claim("PhoneNumber", model.PhoneNumber ?? ""));
                     await _userManager.AddClaimAsync(user, new Claim("Role", model.Role));
                     await _userManager.AddClaimAsync(user, new Claim("Organization", model.Organization ?? ""));
 
-                    // Logger inn brukeren automatisk etter registrering
+                    // Logger inn den nye brukeren 
                     await _signInManager.SignInAsync(user, isPersistent: false);
 
                     TempData["Success"] = "Account created successfully! Welcome to NRL Obstacle Reporting.";
 
-                    // Rollebasert omdirigering etter registrering
+                    // Rollebasert navigasjon etter registrering 
                     if (model.Role == "Registerfører" || model.Role == "Admin")
                     {
                         // Registerfører og Admin sendes til Dashboard
@@ -135,7 +135,7 @@ namespace IS202.NrlApp.Controllers
                         return RedirectToAction("MyReports", "Obstacle");
                     }
                 }
-
+               /// viser eventuelle valideringsfei fra Identity 
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
@@ -146,7 +146,7 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Logger ut brukeren og omdirigerer til startsiden.
+        /// Logger ut brukeren og sender dem tilbake til forsiden. 
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
