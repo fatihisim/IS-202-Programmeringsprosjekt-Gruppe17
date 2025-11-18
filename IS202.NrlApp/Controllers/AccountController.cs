@@ -153,7 +153,7 @@ namespace IS202.NrlApp.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            TempData["Success"] = "You have been logged out successfully.";
+            TempData["Success"] = "Logged out successfully.";
             return RedirectToAction("Index", "Home");
         }
     }

@@ -5,13 +5,13 @@
     var statusFilter = ViewBag.StatusFilter as string ?? "Pending";
     var typeFilter = ViewBag.TypeFilter as string ?? "";
     
-    // İstatistikler ViewBag'den (TÜM raporlar)
+    // Statistikk fra ViewBag (ALLE rapporter uavhengig av filter)
     var totalCount = ViewBag.TotalCount ?? 0;
     var pendingCount = ViewBag.PendingCount ?? 0;
     var approvedCount = ViewBag.ApprovedCount ?? 0;
     var rejectedCount = ViewBag.RejectedCount ?? 0;
     
-    // Filtrelenmiş raporlar (tablo ve harita için)
+    // Filtrerte rapporter (for tabell og kart)
     var filteredObstacles = Model.ToList();
     var filteredCount = filteredObstacles.Count;
 }
@@ -24,7 +24,7 @@
         <p class="text-muted mb-0">Review and manage obstacle reports</p>
     </div>
 
-    <!-- İstatistik Kartları -->
+    @* Statistikk-kort *@
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-sm-6">
             <div class="card border-primary shadow-sm" style="min-height: 100px;">
@@ -80,7 +80,7 @@
         </div>
     </div>
 
-    <!-- Filtreleme -->
+    @* Filtreringsskjema *@
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="get" asp-action="Dashboard" class="row g-3">
@@ -114,9 +114,9 @@
         </div>
     </div>
 
-    <!-- Tablo ve Harita -->
+    @* Tabell og kart layout *@
     <div class="row g-4">
-        <!-- Tablo (sol taraf) -->
+        @* Venstre kolonne: Tabell med rapporter *@
         <div class="col-lg-7">
             <div class="card shadow-sm">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -170,6 +170,14 @@
                                         else
                                         {
                                             <span class="text-muted">—</span>
+                                        }
+                                        
+                                        @* Viser feedback-ikon hvis det finnes feedback fra Registerfører *@
+                                        @if (!string.IsNullOrEmpty(item.Feedback))
+                                        {
+                                            <span class="ms-2" title="@item.Feedback">
+                                                <i class="bi bi-chat-left-text-fill text-primary"></i>
+                                            </span>
                                         }
                                     </td>
                                     <td class="small">
@@ -230,7 +238,7 @@
                                             </div>
                                         }
                                         
-                                        <!-- Hidden delete form -->
+                                        @* Skjult sletteskjema *@
                                         <form id="delete-form-@item.Id" asp-action="Delete" asp-route-id="@item.Id" 
                                               method="post" style="display:none;">
                                             @Html.AntiForgeryToken()
@@ -238,7 +246,7 @@
                                     </td>
                                 </tr>
 
-                                <!-- Approve Modal -->
+                                @* Godkjenningsmodal *@
                                 <div class="modal fade" id="approveModal-@item.Id" tabindex="-1">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
@@ -276,7 +284,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Reject Modal -->
+                                @* Avvisningsmodal *@
                                 <div class="modal fade" id="rejectModal-@item.Id" tabindex="-1">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
@@ -314,7 +322,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Delete Confirmation Modal -->
+                                @* Slettebekreftelsesmodal *@
                                 <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content">
@@ -358,7 +366,7 @@
     </div>
 </div>
 
-<!-- Harita (sağ taraf) -->
+@* Høyre kolonne: Kart *@
 <div class="col-lg-5">
     <div class="card shadow-sm sticky-top" style="top: 20px;">
         <div class="card-header bg-light">
@@ -380,28 +388,28 @@
 
     <script>
         (function () {
-            // Initialize map
+            // Initialiserer kartet
             const map = L.map('dashboardMap').setView([58.146, 7.995], 10);
             
-            // Base layer: Satellite
+            // Grunnlag: Satellittbilde
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
                 attribution: '&copy; Esri'
             }).addTo(map);
             
-            // Overlay: Labels
+            // Overlag: Etiketter
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 opacity: 0.4,
                 attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            // Disable scroll wheel zoom
+            // Deaktiverer rullehjulzoom som standard
             map.scrollWheelZoom.disable();
             map.on('focus', () => map.scrollWheelZoom.enable());
             map.on('blur', () => map.scrollWheelZoom.disable());
 
-            // Add obstacles to map
+            // Legger til hindringer på kartet
             const obstacles = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 Model.Select(o => new {
                     id = o.Id,
@@ -418,7 +426,7 @@
             const markers = {};
             const bounds = [];
 
-            // Define marker icon function based on status (same as List)
+            // Definerer markørfarge basert på status
             const getMarkerIcon = (status) => {
                 const color = status === 'Approved' ? 'green' : 
                               status === 'Rejected' ? 'red' : 
@@ -452,12 +460,12 @@
                 bounds.push([obs.lat, obs.lng]);
             });
 
-            // Fit map to show all markers
+            // Tilpasser kartet for å vise alle markører
             if (bounds.length > 0) {
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
 
-            // Highlight marker when row is clicked
+            // Fremhever markør når rad klikkes
             document.querySelectorAll('.obstacle-row').forEach(row => {
                 row.addEventListener('click', function() {
                     const id = this.dataset.id;
@@ -468,7 +476,7 @@
                         map.setView([lat, lng], 15);
                         markers[id].openPopup();
 
-                        // Highlight row
+                        // Fremhever valgt rad
                         document.querySelectorAll('.obstacle-row').forEach(r => r.classList.remove('table-active'));
                         this.classList.add('table-active');
                     }

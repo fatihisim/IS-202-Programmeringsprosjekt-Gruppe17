@@ -191,7 +191,7 @@ namespace IS202.NrlApp.Controllers
             }
 
             obstacle.Status = "Approved";
-            obstacle.ProcessedBy = User.Identity?.Name;
+            obstacle.ProcessedBy = User.FindFirstValue("FullName") ?? User.Identity?.Name;
             obstacle.ProcessedAt = GetNorwegianTime();
             obstacle.Feedback = feedback;
 
@@ -226,7 +226,7 @@ namespace IS202.NrlApp.Controllers
             }
 
             obstacle.Status = "Rejected";
-            obstacle.ProcessedBy = User.Identity?.Name;
+            obstacle.ProcessedBy = User.FindFirstValue("FullName") ?? User.Identity?.Name;
             obstacle.ProcessedAt = GetNorwegianTime();
             obstacle.Feedback = feedback;
 
@@ -411,7 +411,7 @@ namespace IS202.NrlApp.Controllers
                 if (obstacle.Status == "Pending" || obstacle.Status == "Rejected")
                 {
                     obstacle.Status = "Approved";
-                    obstacle.ProcessedBy = User.Identity?.Name;
+                    obstacle.ProcessedBy = User.FindFirstValue("FullName") ?? User.Identity?.Name;
                     obstacle.ProcessedAt = GetNorwegianTime();
                 }
                 TempData["Success"] = "Report updated and approved successfully.";

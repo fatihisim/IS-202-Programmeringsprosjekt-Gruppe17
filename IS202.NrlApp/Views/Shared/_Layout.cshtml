@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/IS202.NrlApp.styles.css" asp-append-version="true" />
 
-    <!-- Bootstrap Icons -->
+    @* Bootstrap Icons *@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
 
     <style>
@@ -37,7 +37,7 @@
             color: #4da3ff !important;
         }
 
-        /* User dropdown styling */
+        @* User dropdown styling *@
         .user-dropdown-btn {
             background-color: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -69,7 +69,7 @@
             background-color: #f0f0f0;
         }
 
-        /* Role badge */
+        @* Role badge *@
         .role-badge {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
@@ -83,16 +83,16 @@
         }
 
         .role-badge-pilot {
-            background-color: #198754;
+            background-color: #0d6efd;
             color: white;
         }
 
         .role-badge-admin {
-            background-color: #ffc107;
-            color: black;
+            background-color: #6f42c1;
+            color: white;
         }
 
-        /* Toast notification (fixed top-center) */
+        @* Toast notification (fast øverst i midten) *@
         .toast-notification {
             position: fixed;
             top: 80px;
@@ -124,26 +124,6 @@
             }
         }
 
-        .role-badge-registerforer {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .role-badge-pilot {
-            background-color: #198754;
-            color: white;
-        }
-
-        .role-badge-admin {
-            background-color: #6f42c1;
-            color: white;
-        }
-
-        .role-badge-pilot {
-            background-color: #0d6efd;
-            color: white;
-        }
-
         footer {
             background-color: #f8f9fa;
             border-top: 1px solid #e2e2e2;
@@ -158,6 +138,17 @@
             color: #666;
         }
 
+        footer a {
+            color: #003366;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        footer a:hover {
+            color: #4da3ff;
+            text-decoration: underline;
+        }
+
         .btn-primary {
             background-color: #4da3ff;
             border-color: #4da3ff;
@@ -167,7 +158,7 @@
             background-color: #368ce2;
         }
 
-        /* Alert styling */
+        @* Alert styling *@
         .alert {
             border-radius: 0.5rem;
             border: none;
@@ -193,7 +184,7 @@
                             var isPilot = userRole == "Pilot" || string.IsNullOrEmpty(userRole);
                             var isRegisterforer = userRole == "Registerfører" || userRole == "Admin";
 
-                            <!-- Report (bare for Piloter) -->
+                            @* Report (bare for Piloter) *@
                             if (isPilot)
                             {
                                 <li class="nav-item">
@@ -203,7 +194,7 @@
                                 </li>
                             }
 
-                            <!-- My Reports (bare for Piloter) -->
+                            @* My Reports (bare for Piloter) *@
                             if (isPilot)
                             {
                                 <li class="nav-item">
@@ -213,7 +204,7 @@
                                 </li>
                             }
 
-                            <!-- Dashboard (bare for Registerfører og Admin) -->
+                            @* Dashboard (bare for Registerfører og Admin) *@
                             if (isRegisterforer)
                             {
                                 <li class="nav-item">
@@ -223,7 +214,7 @@
                                 </li>
                             }
 
-                            <!-- All Reports (bare for innloggede brukere) -->
+                            @* All Reports (for alle innloggede brukere) *@
                             <li class="nav-item">
                                 <a class="nav-link text-light" asp-area="" asp-controller="Obstacle" asp-action="List">
                                     <i class="bi bi-list-task"></i> All Reports
@@ -253,7 +244,7 @@
                                 _ => "Pilot"
                             };
 
-                            <!-- User dropdown -->
+                            @* User dropdown *@
                             <li class="nav-item dropdown">
                                 <button class="btn btn-sm user-dropdown-btn dropdown-toggle" type="button" 
                                         id="userDropdown" data-bs-toggle="dropdown">
@@ -287,14 +278,13 @@
                                 </ul>
                             </li>
                         }
-                        @* else bloğu kaldırıldı - unauthenticated kullanıcılar için navbar linkleri yok *@
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
 
-    <!-- TempData meldinger (fixed top-center toast) -->
+    @* TempData meldinger (fast øverst i midten som toast) *@
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show toast-notification" role="alert">
@@ -313,7 +303,7 @@
 
     @if (TempData["Info"] != null)
     {
-        <div class="alert alert-info alert-dismissible fade show toast-notification" role="alert">
+        <div class="alert alert-warning alert-dismissible fade show toast-notification" role="alert">
             <i class="bi bi-info-circle-fill me-2"></i>@TempData["Info"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -326,14 +316,18 @@
     </div>
 
     <footer class="text-center">
-        <p>© 2025 NRL Obstacle Reporting System – Group 17 | University of Agder</p>
+        <p>
+            © 2025 NRL Obstacle Reporting System – Group 17 | University of Agder
+            <span class="mx-2">•</span>
+            <a asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+        </p>
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Auto-dismiss toast notifications after 5 seconds (not modal alerts)
+        // Automatisk lukking av toast-varsler etter 5 sekunder
         $(document).ready(function() {
             setTimeout(function() {
                 $('.toast-notification').fadeOut('slow', function() {

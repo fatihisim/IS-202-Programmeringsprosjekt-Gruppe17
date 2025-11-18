@@ -59,7 +59,7 @@
         <!-- Phone Number -->
         <div class="form-group mb-3">
             <label asp-for="PhoneNumber" class="form-label">
-                Phone Number <span class="text-danger">*</span>
+                Phone Number <span class="text-muted small">(optional)</span>
             </label>
             <input asp-for="PhoneNumber" class="form-control" placeholder="Enter your phone number" />
             <span asp-validation-for="PhoneNumber" class="text-danger"></span>
@@ -74,7 +74,6 @@
                 <option value="">-- Select Role --</option>
                 <option value="Pilot">Pilot</option>
                 <option value="Registerfører">Registerfører (NRL Officer)</option>
-                <option value="Admin">Admin</option>
             </select>
             <span asp-validation-for="Role" class="text-danger"></span>
         </div>

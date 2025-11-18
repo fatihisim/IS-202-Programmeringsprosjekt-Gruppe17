@@ -1,17 +1,16 @@
 ﻿@{
     ViewData["Title"] = "Privacy";
-    // Norsk kommentar: Viser personvernerklæring for applikasjonen.
-    // All synlig tekst er på ENGELSK (krav fra oppgaven).
+    // Viser personvernerklæring for applikasjonen.
 }
 
 <div class="container my-4">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h2 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Privacy</h2>
-        <span class="text-muted small">Last updated: @DateTime.UtcNow.ToString("yyyy-MM-dd")</span>
+        <h2 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Privacy Policy</h2>
+        <span class="text-muted small">Last updated: November 2025</span>
     </div>
 
     <div class="row g-4">
-        <!-- Norsk kommentar: Kort 1 – Hva samler vi inn -->
+        @* Kort 1 – Hva samler vi inn *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light">
@@ -19,17 +18,17 @@
                 </div>
                 <div class="card-body">
                     <ul class="mb-0">
-                        <li>Reporter name and organization (provided by you)</li>
-                        <li>Obstacle details (type, comment)</li>
-                        <li>Location (latitude &amp; longitude you pick on the map)</li>
-                        <li>Timestamp of the submission</li>
-                        <li>Technical logs needed to operate the service</li>
+                        <li>Your name, email, phone number, and organization</li>
+                        <li>Obstacle details (type, description, location)</li>
+                        <li>Geographic coordinates (latitude & longitude)</li>
+                        <li>Submission timestamp</li>
+                        <li>Technical logs for service operation</li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <!-- Norsk kommentar: Kort 2 – Hvordan brukes data -->
+        @* Kort 2 – Hvordan brukes data *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light">
@@ -37,15 +36,16 @@
                 </div>
                 <div class="card-body">
                     <ul class="mb-0">
-                        <li>To display obstacles on the map for pilots and operators</li>
-                        <li>To review and verify reports before publication</li>
-                        <li>To maintain service quality and security</li>
+                        <li>Display obstacles on the map for aviation safety</li>
+                        <li>Review and verify reports before publication</li>
+                        <li>Communicate with reporters about their submissions</li>
+                        <li>Maintain service quality and security</li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <!-- Norsk kommentar: Kort 3 – Sikkerhetstiltak -->
+        @* Kort 3 – Sikkerhetstiltak *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light">
@@ -53,16 +53,17 @@
                 </div>
                 <div class="card-body">
                     <ul class="mb-0">
-                        <li>Transport security (HTTPS) when available</li>
-                        <li>Role-based access for administrative features</li>
+                        <li>Encrypted data transmission (HTTPS)</li>
+                        <li>Password hashing with ASP.NET Core Identity</li>
+                        <li>Role-based access control</li>
                         <li>Input validation and server-side checks</li>
-                        <li>Regular dependency updates</li>
+                        <li>Regular security updates</li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <!-- Norsk kommentar: Kort 4 – Dine rettigheter -->
+        @* Kort 4 – Dine rettigheter *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light">
@@ -70,50 +71,56 @@
                 </div>
                 <div class="card-body">
                     <ul class="mb-0">
-                        <li>Request a copy, correction, or deletion of your data</li>
-                        <li>Withdraw a report if it contains personal information</li>
-                        <li>Contact us to raise a privacy concern</li>
+                        <li>Access, correct, or delete your personal data</li>
+                        <li>Edit or withdraw your reports</li>
+                        <li>Request information about data processing</li>
+                        <li>Contact us about privacy concerns</li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <!-- Norsk kommentar: Kort 5 – Lagringstid -->
+        @* Kort 5 – Lagringstid *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light">
-                    <i class="bi bi-hourglass-split me-2"></i>Retention
+                    <i class="bi bi-hourglass-split me-2"></i>Data retention
                 </div>
                 <div class="card-body">
                     <p class="mb-0">
-                        Operational data may be retained as long as necessary to support safety operations,
-                        audits, or legal obligations. Non-essential personal data is minimized and removed when no longer needed.
+                        Operational data is retained as long as necessary to support aviation safety operations,
+                        regulatory compliance, and legal obligations. Personal data is minimized and removed when 
+                        no longer needed for these purposes.
                     </p>
                 </div>
             </div>
         </div>
 
-        <!-- Norsk kommentar: Kort 6 – Informasjonskapsler og kontakt -->
+        @* Kort 6 – Informasjonskapsler og kontakt *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light">
-                    <i class="bi bi-envelope-paper-heart me-2"></i>Cookies &amp; contact
+                    <i class="bi bi-envelope-paper-heart me-2"></i>Cookies & contact
                 </div>
                 <div class="card-body">
                     <p class="mb-2">
-                        We use only essential cookies required for the site to function. No advertising cookies are used.
+                        <strong>Cookies:</strong> We use only essential session cookies for authentication. 
+                        No tracking, analytics, or advertising cookies are used.
                     </p>
                     <p class="mb-0">
-                        Contact: <a href="mailto:nrl-support@example.org">nrl-support@example.org</a><br />
-                        Docs: <a href="https://github.com/" target="_blank" rel="noopener">Operations &amp; testing notes (GitHub)</a>
+                        <strong>Project:</strong> IS-200, IS-201, IS-202 Student Project (2025), Group 17<br />
+                        <strong>Institution:</strong> University of Agder<br />
+                        <strong>Questions:</strong> Contact your course supervisor or instructor
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Norsk kommentar: Liten note nederst -->
-    <p class="text-muted small mt-4">
-        This application is a student project. Do not submit sensitive personal data.
-    </p>
+    @* Studentprosjekt-disclaimer nederst *@
+    <div class="alert alert-info mt-4">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Important:</strong> This is a student project developed for educational purposes. 
+        Do not submit real sensitive personal data or rely on this system for actual aviation operations.
+    </div>
 </div>
