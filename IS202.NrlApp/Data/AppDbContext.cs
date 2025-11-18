@@ -7,16 +7,16 @@ namespace IS202.NrlApp.Data
     // AppDbContext utvider IdentityDbContext for å inkludere brukere, roller og autentisering.
     public class AppDbContext : IdentityDbContext
     {
-        // Konstruktør som sender opsjoner til basisklassen (IdentityDbContext)
+        // Konstruktør som sender databasedigutasjonen videre til IdentityDbContext
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
         }
 
-        // DbSet for applikasjonens domene-modeller (for eksempel hinder på kartet)
+        // Tabell for lagring av hindere (f.eks. master, bygg, objekter på kartet)
         public DbSet<Obstacle> Obstacles { get; set; }
 
-        // DbSet for registrerte brukere i systemet
+        // Tabell for applikasjonens brukere (utvidet fra IdentityUser)
         public DbSet<User> Users { get; set; }
 
         // Metode for å konfigurere databasen og relasjonene
@@ -24,7 +24,7 @@ namespace IS202.NrlApp.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Her kan man legge til spesielle konfigurasjoner eller standarddata senere.
+            // Tilpasset konfigurasjon kan legges her dersom det trens
         }
     }
 }
