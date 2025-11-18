@@ -4,17 +4,17 @@
     ViewData["Title"] = "Map Overview";
 }
 
-<!-- 
+@* 
     Denne siden viser et fullskjerms kart over alle registrerte hinder.
     Kode-kommentarer er på norsk (iht. kurskrav), men all synlig UI-tekst er ENGELSK.
--->
+*@
 
 <div class="container my-4">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <h2 class="mb-0"><i class="bi bi-map me-2"></i>Map Overview</h2>
 
         <div class="d-flex flex-wrap gap-2">
-            <!-- Filter for type -->
+            @* Filter for type *@
             <select id="typeFilter" class="form-select form-select-sm" style="min-width:180px;">
                 <option value="">All types</option>
                 <option>Crane</option>
@@ -25,31 +25,30 @@
                 <option>Other</option>
             </select>
 
-            <!-- Tekstsøk -->
+            @* Tekstsøk *@
             <input id="searchInput" class="form-control form-control-sm"
                    placeholder="Search (reporter, org, type, comment)" style="min-width:280px;" />
 
-            <!-- Ny innmelding -->
+            @* Ny innmelding *@
             <a asp-controller="Obstacle" asp-action="DataForm" class="btn btn-primary btn-sm">
                 <i class="bi bi-flag-fill me-1"></i> New report
             </a>
         </div>
     </div>
 
-    <!-- Kartkort -->
+    @* Kartkort *@
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div id="overviewMap" style="height: 520px;"></div>
         </div>
         <div class="card-footer d-flex justify-content-between small text-muted">
             <span id="visibleCount"></span>
-            <span>Tip: Click a marker to see details.</span>
+            <span>Tip: Click a marker/line to see details.</span>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <!-- Leaflet fra CDN -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -57,18 +56,36 @@
 
     <script>
         (function () {
-            // Henter alle hinder som enkel, lett JSON-struktur
+            // Serialiserer alle hinder med GeoJSON-data
             const obstacles = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 Model.Select(m => new {
-                    m.ReporterName, m.Organization, m.ObstacleType, m.Comment,
-                    Lat = m.Latitude, Lon = m.Longitude, Created = m.CreatedAt
+                    m.ReporterName, 
+                    m.Organization, 
+                    m.ObstacleType, 
+                    m.Comment,
+                    Lat = m.Latitude, 
+                    Lon = m.Longitude, 
+                    Created = m.CreatedAt,
+                    GeometryType = m.GeometryType,
+                    GeoJson = m.GeoJsonData
                 })
             ));
 
-            // Init kart (standard Kristiansand)
+            // Initialiserer kart (sentrert på Kristiansand)
             const map = L.map('overviewMap').setView([58.146, 7.995], 12);
+            
+            // Grunnlag: Satellittbilde
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                maxNativeZoom: 18,
+                attribution: '&copy; Esri'
+            }).addTo(map);
+            
+            // Overlag: OpenStreetMap etiketter
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19, attribution: '&copy; OpenStreetMap'
+                maxZoom: 19,
+                opacity: 0.4,
+                attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
             // Bedre UX: unngå utilsiktet zoom ved scroll
@@ -76,9 +93,12 @@
             map.on('focus', () => map.scrollWheelZoom.enable());
             map.on('blur',  () => map.scrollWheelZoom.disable());
 
-            // Markører og lag
-            const allMarkers = [];
+            // Lag for alle objekter
+            const allLayers = [];
             const layerGroup = L.layerGroup().addTo(map);
+
+            // Definerer linjefarge (tydelig cyan for satellittbilde)
+            const getLineColor = () => '#00ffff'; // Cyan
 
             // Enkel merkelapp i popup
             function badge(type) {
@@ -88,20 +108,21 @@
             // Popup-innhold (ENGELSK)
             function makePopup(o) {
                 const created = o.Created ? new Date(o.Created).toLocaleString() : '';
+                const geomType = o.GeometryType ? `<br/><small>Type: ${o.GeometryType}</small>` : '';
                 return `
                     <div style="min-width:220px">
                         <div class="mb-1">${badge(o.ObstacleType)}</div>
                         <strong>${o.ReporterName ?? ''}</strong> – ${o.Organization ?? ''}<br/>
                         <em>${o.Comment ?? ''}</em><br/>
-                        <small>Lat: ${Number(o.Lat).toFixed(6)}, Lon: ${Number(o.Lon).toFixed(6)}</small><br/>
+                        <small>Lat: ${Number(o.Lat).toFixed(6)}, Lon: ${Number(o.Lon).toFixed(6)}</small>${geomType}<br/>
                         <small class="text-muted">${created}</small>
                     </div>`;
             }
 
-            // Tegner markører basert på filter/søk
-            function rebuildMarkers(filterType, q) {
+            // Tegner objekter basert på filter/søk
+            function rebuildLayers(filterType, q) {
                 layerGroup.clearLayers();
-                allMarkers.length = 0;
+                allLayers.length = 0;
 
                 const query = (q || '').toLowerCase();
                 const filtered = obstacles.filter(o => {
@@ -111,17 +132,60 @@
                     return typeOk && (!query || text.includes(query));
                 });
 
+                const bounds = [];
+
                 filtered.forEach(o => {
                     if (o.Lat != null && o.Lon != null) {
-                        const m = L.marker([o.Lat, o.Lon]).addTo(layerGroup);
-                        m.bindPopup(makePopup(o));
-                        allMarkers.push(m);
+                        let layer;
+
+                        // Hvis GeoJSON finnes, bruk den
+                        if (o.GeoJson && o.GeoJson.trim() !== '' && o.GeoJson !== 'null') {
+                            try {
+                                const geojson = JSON.parse(o.GeoJson);
+                                
+                                layer = L.geoJSON(geojson, {
+                                    style: {
+                                        color: getLineColor(),
+                                        weight: 4,
+                                        opacity: 0.9
+                                    },
+                                    pointToLayer: function (feature, latlng) {
+                                        bounds.push([latlng.lat, latlng.lng]);
+                                        return L.marker(latlng);
+                                    },
+                                    onEachFeature: function (feature, lyr) {
+                                        // Samler bounds for linjer/polygoner
+                                        if (lyr.getBounds) {
+                                            const layerBounds = lyr.getBounds();
+                                            bounds.push([layerBounds.getNorth(), layerBounds.getEast()]);
+                                            bounds.push([layerBounds.getSouth(), layerBounds.getWest()]);
+                                        }
+                                    }
+                                }).addTo(layerGroup);
+                                
+                                layer.bindPopup(makePopup(o));
+                                allLayers.push(layer);
+                            } catch (e) {
+                                console.error('GeoJSON parse-feil:', e);
+                                // Tilbakefall til markør
+                                layer = L.marker([o.Lat, o.Lon]).addTo(layerGroup);
+                                layer.bindPopup(makePopup(o));
+                                bounds.push([o.Lat, o.Lon]);
+                                allLayers.push(layer);
+                            }
+                        } else {
+                            // Tilbakefall: Bruk bare lat/lng som markør
+                            layer = L.marker([o.Lat, o.Lon]).addTo(layerGroup);
+                            layer.bindPopup(makePopup(o));
+                            bounds.push([o.Lat, o.Lon]);
+                            allLayers.push(layer);
+                        }
                     }
                 });
 
-                if (allMarkers.length > 0) {
-                    const group = L.featureGroup(allMarkers);
-                    map.fitBounds(group.getBounds().pad(0.2));
+                // Tilpasser kartet for å vise alle objekter
+                if (bounds.length > 0) {
+                    map.fitBounds(bounds, { padding: [50, 50] });
                 }
 
                 // Teller (ENGELSK)
@@ -130,12 +194,12 @@
             }
 
             // Førstegenerering
-            rebuildMarkers('', '');
+            rebuildLayers('', '');
 
-            // UI-hendelser
+            // UI-hendelser for filtrering
             const typeSel = document.getElementById('typeFilter');
             const searchInput = document.getElementById('searchInput');
-            function applyFilters() { rebuildMarkers(typeSel.value, searchInput.value); }
+            function applyFilters() { rebuildLayers(typeSel.value, searchInput.value); }
             typeSel.addEventListener('change', applyFilters);
             searchInput.addEventListener('input', applyFilters);
         })();

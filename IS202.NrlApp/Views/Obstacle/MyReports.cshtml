@@ -5,7 +5,7 @@
     var typeFilter = ViewBag.TypeFilter as string ?? "";
     var hasActiveFilter = !string.IsNullOrEmpty(statusFilter) || !string.IsNullOrEmpty(typeFilter);
     
-    // İstatistikler ViewBag'den (TÜM raporlar, filtrelenMEMİŞ)
+    // Statistikk fra ViewBag (ALLE rapporter, ufiltrerte)
     var totalCount = ViewBag.TotalCount ?? 0;
     var pendingCount = ViewBag.PendingCount ?? 0;
     var approvedCount = ViewBag.ApprovedCount ?? 0;
@@ -30,7 +30,7 @@
     }
     else
     {
-        <!-- Summary cards -->
+        @* Sammendragskort *@
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <div class="card border-warning shadow-sm">
@@ -73,7 +73,7 @@
             </div>
         </div>
 
-        <!-- Filtreleme -->
+        @* Filtreringsform *@
         <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <form method="get" asp-action="MyReports" class="row g-3">
@@ -107,7 +107,7 @@
             </div>
         </div>
 
-        <!-- Table -->
+        @* Rapporteringstabell *@
         <div class="card shadow-sm">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-table me-2"></i>Your Reports</span>
@@ -239,7 +239,7 @@
                                         </button>
                                     </div>
 
-                                    <!-- Hidden delete form -->
+                                    @* Skjult sletteskjema *@
                                     <form id="delete-form-@o.Id" asp-action="Delete" asp-route-id="@o.Id" 
                                           method="post" style="display:none;">
                                         @Html.AntiForgeryToken()
@@ -247,63 +247,61 @@
                                 }
                                 else
                                 {
-                                    <div class="d-flex gap-1">
+                                    <div class="d-flex gap-1 align-items-center">
                                         <button type="button" class="btn btn-info btn-sm text-white" title="View Details" 
                                                 data-bs-toggle="modal" data-bs-target="#viewModal-@o.Id">
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        <button type="button" class="btn btn-secondary btn-sm text-white" disabled 
-                                                title="Approved reports are locked">
-                                            <i class="bi bi-lock-fill"></i>
-                                        </button>
+                                        <span class="badge bg-secondary d-flex align-items-center">
+                                            <i class="bi bi-lock-fill me-1"></i>Cannot Edit
+                                        </span>
                                     </div>
                                 }
 
-                                <!-- View Modal -->
+                                @* Detaljeringsmodal *@
                                 <div class="modal fade" id="viewModal-@o.Id" tabindex="-1" 
-                                     data-lat="@o.Latitude?.ToString("F6")" 
-                                     data-lon="@o.Longitude?.ToString("F6")">
-                                    <div class="modal-dialog modal-lg">
+                                     data-lat="@o.Latitude" data-lon="@o.Longitude" 
+                                     data-geojson="@Html.Raw(o.GeoJsonData)" data-geotype="@o.GeometryType">
+                                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
                                         <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">
-                                                    <i class="bi bi-info-circle me-2"></i>Report #@o.Id
+                                            <div class="modal-header bg-primary text-white">
+                                                <h5 class="modal-title text-white">
+                                                    <i class="bi bi-info-circle-fill me-2"></i>Report Details - ID: @o.Id
                                                 </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
                                                 <div class="row g-3">
-                                                    <div class="col-md-6">
-                                                        <strong>Status:</strong>
-                                                        <span class="badge @(o.Status == "Pending" ? "bg-warning text-dark" : o.Status == "Approved" ? "bg-success" : "bg-danger")">
-                                                            @o.Status
-                                                        </span>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <strong>Type:</strong>
+                                                    <div class="col-12 col-md-6">
+                                                        <strong><i class="bi bi-tag me-2"></i>Type:</strong> 
                                                         <span class="badge bg-secondary">@o.ObstacleType</span>
                                                     </div>
-                                                    <div class="col-12">
-                                                        <strong>Comment:</strong>
-                                                        <p class="mb-0">@(string.IsNullOrEmpty(o.Comment) ? "No comment" : o.Comment)</p>
+                                                    <div class="col-12 col-md-6">
+                                                        <strong><i class="bi bi-hourglass me-2"></i>Status:</strong> 
+                                                        <span class="badge @statusBadgeClass">@o.Status</span>
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <strong>Latitude:</strong>
-                                                        <p class="mb-0">@(o.Latitude?.ToString("F6") ?? "—")</p>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <strong>Longitude:</strong>
-                                                        <p class="mb-0">@(o.Longitude?.ToString("F6") ?? "—")</p>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <strong>Created:</strong>
-                                                        <p class="mb-0">@o.CreatedAt.ToString("yyyy-MM-dd HH:mm")</p>
-                                                    </div>
-                                                    @if (!string.IsNullOrEmpty(o.ProcessedBy))
+                                                    @if (!string.IsNullOrEmpty(o.Comment))
                                                     {
-                                                        <div class="col-md-6">
-                                                            <strong>Processed By:</strong>
-                                                            <p class="mb-0">@o.ProcessedBy</p>
+                                                        <div class="col-12">
+                                                            <strong><i class="bi bi-chat-square-text me-2"></i>Comment:</strong>
+                                                            <p class="mb-0 mt-1">@o.Comment</p>
+                                                        </div>
+                                                    }
+                                                    <div class="col-12 col-md-6">
+                                                        <strong><i class="bi bi-person me-2"></i>Reporter:</strong> @o.ReporterName
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <strong><i class="bi bi-building me-2"></i>Organization:</strong> @o.Organization
+                                                    </div>
+                                                    <div class="col-12 col-md-6">
+                                                        <strong><i class="bi bi-calendar me-2"></i>Created:</strong> 
+                                                        <small>@o.CreatedAt.ToString("yyyy-MM-dd HH:mm")</small>
+                                                    </div>
+                                                    @if (o.ProcessedAt.HasValue)
+                                                    {
+                                                        <div class="col-12 col-md-6">
+                                                            <strong><i class="bi bi-clock-history me-2"></i>Processed:</strong> 
+                                                            <small>@o.ProcessedAt.Value.ToString("yyyy-MM-dd HH:mm")</small>
                                                         </div>
                                                     }
                                                     @if (!string.IsNullOrEmpty(o.Feedback))
@@ -346,7 +344,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Delete Confirmation Modal -->
+                                @* Slette-bekreftelsesmodal *@
                                 @if (o.Status != "Approved")
                                 {
                                     <div class="modal fade" id="deleteModal-@o.Id" tabindex="-1">
@@ -389,18 +387,24 @@
 </div>
 
 @section Scripts {
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
-        // Initialize maps when modals are shown
+        // Initialiserer kart i modaler med GeoJSON-støtte
         document.addEventListener('DOMContentLoaded', function() {
             const viewModals = document.querySelectorAll('[id^="viewModal-"]');
+            
+            // Definerer linjefarge (tydelige farger for satellittbilde)
+            const getLineColor = () => '#00ffff'; // Cyan
+            
+            // HTML decode helper
+            function htmlDecode(input) {
+                const doc = new DOMParser().parseFromString(input, 'text/html');
+                return doc.documentElement.textContent;
+            }
             
             viewModals.forEach(function(modal) {
                 modal.addEventListener('shown.bs.modal', function(event) {
@@ -410,37 +414,71 @@
                     
                     if (!mapDiv) return;
                     
-                    // Get coordinates from data attributes
+                    // Henter koordinater fra data-attributter
                     const lat = parseFloat(modalElement.getAttribute('data-lat'));
                     const lon = parseFloat(modalElement.getAttribute('data-lon'));
+                    const geoJsonStr = htmlDecode(modalElement.getAttribute('data-geojson') || '');
+                    const geomType = modalElement.getAttribute('data-geotype');
                     
                     if (isNaN(lat) || isNaN(lon)) return;
                     
-                    // Check if map already initialized
+                    // Sjekker om kart allerede er initialisert
                     if (mapDiv._leaflet_id) return;
                     
-                    // Initialize map
+                    // Initialiserer kart
                     const map = L.map(mapDiv.id).setView([lat, lon], 15);
                     
-                    // Add satellite tile layer
+                    // Grunnlag: Satellittbilde
                     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                         maxZoom: 19,
-                        attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+                        maxNativeZoom: 18,
+                        attribution: '&copy; Esri'
                     }).addTo(map);
                     
-                    // Add overlay labels
+                    // Overlag: Etiketter
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         opacity: 0.4,
-                        attribution: '&copy; OpenStreetMap contributors'
+                        attribution: '&copy; OpenStreetMap'
                     }).addTo(map);
                     
-                    // Add marker
-                    L.marker([lat, lon]).addTo(map)
-                        .bindPopup('<strong>Report #' + reportId + '</strong><br/>Lat: ' + lat + '<br/>Lon: ' + lon)
-                        .openPopup();
+                    // Legger til GeoJSON eller markør
+                    if (geoJsonStr && geoJsonStr.trim() !== '' && geoJsonStr !== 'null') {
+                        try {
+                            const geojson = JSON.parse(geoJsonStr);
+                            
+                            const layer = L.geoJSON(geojson, {
+                                style: {
+                                    color: getLineColor(),
+                                    weight: 4,
+                                    opacity: 0.9
+                                },
+                                pointToLayer: function (feature, latlng) {
+                                    return L.marker(latlng);
+                                }
+                            }).addTo(map);
+                            
+                            layer.bindPopup('<strong>Report #' + reportId + '</strong><br/>Type: ' + geomType).openPopup();
+                            
+                            // Zoomer til bounds hvis det er linje/polygon
+                            if (typeof layer.getBounds === 'function') {
+                                map.fitBounds(layer.getBounds(), { padding: [30, 30] });
+                            }
+                        } catch (e) {
+                            console.error('GeoJSON parse-feil:', e);
+                            // Tilbakefall til markør
+                            L.marker([lat, lon]).addTo(map)
+                                .bindPopup('<strong>Report #' + reportId + '</strong><br/>Lat: ' + lat + '<br/>Lon: ' + lon)
+                                .openPopup();
+                        }
+                    } else {
+                        // Tilbakefall: Bruk markør
+                        L.marker([lat, lon]).addTo(map)
+                            .bindPopup('<strong>Report #' + reportId + '</strong><br/>Lat: ' + lat + '<br/>Lon: ' + lon)
+                            .openPopup();
+                    }
                     
-                    // Fix map size after modal animation
+                    // Retter kartstørrelse etter modal-animasjon
                     setTimeout(function() {
                         map.invalidateSize();
                     }, 300);

@@ -394,6 +394,7 @@
             // Grunnlag: Satellittbilde
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
+                maxNativeZoom: 18,
                 attribution: '&copy; Esri'
             }).addTo(map);
             
@@ -409,7 +410,7 @@
             map.on('focus', () => map.scrollWheelZoom.enable());
             map.on('blur', () => map.scrollWheelZoom.disable());
 
-            // Legger til hindringer på kartet
+            // Legger til hindringer på kartet (MED GeoJSON!)
             const obstacles = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                 Model.Select(o => new {
                     id = o.Id,
@@ -419,11 +420,13 @@
                     reporter = o.ReporterName,
                     status = o.Status,
                     comment = o.Comment,
-                    organization = o.Organization
+                    organization = o.Organization,
+                    geometryType = o.GeometryType,
+                    geoJson = o.GeoJsonData
                 }).Where(o => o.lat != null && o.lng != null)
             ));
 
-            const markers = {};
+            const layers = {};
             const bounds = [];
 
             // Definerer markørfarge basert på status
@@ -442,39 +445,92 @@
                 });
             };
 
+            // Definerer linjefarge basert på status (farger for satellittbilde)
+            const getLineColor = (status) => {
+                return status === 'Approved' ? '#00ffff' :  // Cyan
+                       status === 'Rejected' ? '#ff0066' :  // Magenta
+                       '#ffff00'; // Yellow
+            };
+
             obstacles.forEach(obs => {
-                const icon = getMarkerIcon(obs.status);
-                const marker = L.marker([obs.lat, obs.lng], { icon: icon }).addTo(map);
-                
                 const statusBadge = obs.status === 'Approved' ? '✅' : 
                                    obs.status === 'Rejected' ? '❌' : '⏳';
                 
-                marker.bindPopup(`
+                const popupContent = `
                     <strong>${obs.type ?? 'Obstacle'}</strong> ${statusBadge}<br/>
                     <small>ID: ${obs.id} | Status: ${obs.status}</small><br/>
                     ${obs.reporter ?? ''} – ${obs.organization ?? ''}<br/>
                     <em>${obs.comment ?? ''}</em>
-                `);
+                `;
 
-                markers[obs.id] = marker;
-                bounds.push([obs.lat, obs.lng]);
+                let layer;
+
+                // Hvis GeoJSON finnes, bruk den
+                if (obs.geoJson && obs.geoJson.trim() !== '') {
+                    try {
+                        const geojson = JSON.parse(obs.geoJson);
+                        
+                        layer = L.geoJSON(geojson, {
+                            style: {
+                                color: getLineColor(obs.status),
+                                weight: 4,
+                                opacity: 0.9
+                            },
+                            pointToLayer: function (feature, latlng) {
+                                bounds.push([latlng.lat, latlng.lng]);
+                                return L.marker(latlng, { icon: getMarkerIcon(obs.status) });
+                            },
+                            onEachFeature: function (feature, layer) {
+                                // Samler bounds for linjer/polygoner
+                                if (layer.getBounds) {
+                                    const layerBounds = layer.getBounds();
+                                    bounds.push([layerBounds.getNorth(), layerBounds.getEast()]);
+                                    bounds.push([layerBounds.getSouth(), layerBounds.getWest()]);
+                                }
+                            }
+                        }).addTo(map);
+                        
+                        layer.bindPopup(popupContent);
+                    } catch (e) {
+                        console.error('GeoJSON parse error for obstacle #' + obs.id, e);
+                        // Fallback til marker
+                        layer = L.marker([obs.lat, obs.lng], { icon: getMarkerIcon(obs.status) }).addTo(map);
+                        layer.bindPopup(popupContent);
+                        bounds.push([obs.lat, obs.lng]);
+                    }
+                } else {
+                    // Fallback: Bruk bare lat/lng som marker
+                    layer = L.marker([obs.lat, obs.lng], { icon: getMarkerIcon(obs.status) }).addTo(map);
+                    layer.bindPopup(popupContent);
+                    bounds.push([obs.lat, obs.lng]);
+                }
+
+                layers[obs.id] = layer;
             });
 
-            // Tilpasser kartet for å vise alle markører
+            // Tilpasser kartet for å vise alle objekter
             if (bounds.length > 0) {
                 map.fitBounds(bounds, { padding: [50, 50] });
             }
 
-            // Fremhever markør når rad klikkes
+            // Fremhever objekt når rad klikkes
             document.querySelectorAll('.obstacle-row').forEach(row => {
                 row.addEventListener('click', function() {
                     const id = this.dataset.id;
-                    const lat = parseFloat(this.dataset.lat);
-                    const lng = parseFloat(this.dataset.lng);
 
-                    if (markers[id] && !isNaN(lat) && !isNaN(lng)) {
-                        map.setView([lat, lng], 15);
-                        markers[id].openPopup();
+                    if (layers[id]) {
+                        // Hvis det er en GeoJSON layer (linje/polygon), zoom til bounds
+                        if (layers[id].getBounds) {
+                            map.fitBounds(layers[id].getBounds(), { padding: [50, 50] });
+                        } else {
+                            // Hvis det er en marker, zoom til punktet
+                            const lat = parseFloat(this.dataset.lat);
+                            const lng = parseFloat(this.dataset.lng);
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                map.setView([lat, lng], 15);
+                            }
+                        }
+                        layers[id].openPopup();
 
                         // Fremhever valgt rad
                         document.querySelectorAll('.obstacle-row').forEach(r => r.classList.remove('table-active'));

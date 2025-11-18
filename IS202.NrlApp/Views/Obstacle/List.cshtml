@@ -10,7 +10,7 @@
     var statusFilter = ViewBag.StatusFilter as string ?? "";
     var typeFilter = ViewBag.TypeFilter as string ?? "";
     
-    // İstatistikler ViewBag'den
+    // Statistikk fra ViewBag
     var totalCount = ViewBag.TotalCount ?? 0;
     var pendingCount = ViewBag.PendingCount ?? 0;
     var approvedCount = ViewBag.ApprovedCount ?? 0;
@@ -18,7 +18,7 @@
 }
 
 <div class="container my-4">
-    <!-- Header -->
+    @* Overskrift *@
     <div class="mb-4">
         <h2 class="mb-0"><i class="bi bi-list-task me-2 text-info"></i>All Reports</h2>
         <p class="text-muted mb-0">View all obstacle reports from all users</p>
@@ -33,7 +33,7 @@
     }
     else
     {
-        <!-- Summary stats -->
+        @* Sammendragskort *@
         <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="card border-primary shadow-sm">
@@ -89,7 +89,7 @@
             </div>
         </div>
 
-        <!-- Filtreleme -->
+        @* Filtreringsform *@
         <div class="card shadow-sm mb-3">
             <div class="card-body">
                 <form method="get" asp-action="List" class="row g-3">
@@ -123,7 +123,7 @@
             </div>
         </div>
 
-        <!-- Table -->
+        @* Rapporteringstabell *@
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-table me-2"></i>Reports Table</span>
@@ -187,7 +187,7 @@
                             _ => "bg-secondary"
                         };
 
-                        <tr data-lat="@lat" data-lon="@lon">
+                        <tr data-id="@o.Id" data-lat="@lat" data-lon="@lon">
                             <td><strong>@o.Id</strong></td>
                             <td>@o.ReporterName</td>
                             <td>@o.Organization</td>
@@ -230,13 +230,13 @@
                                         </button>
                                     </div>
 
-                                    <!-- Hidden delete form -->
+                                    @* Skjult sletteskjema *@
                                     <form id="delete-form-@o.Id" asp-action="Delete" asp-route-id="@o.Id" 
                                           method="post" style="display:none;">
                                         @Html.AntiForgeryToken()
                                     </form>
 
-                                    <!-- Delete Confirmation Modal -->
+                                    @* Slette-bekreftelsesmodal *@
                                     <div class="modal fade" id="deleteModal-@o.Id" tabindex="-1">
                                         <div class="modal-dialog modal-dialog-centered">
                                             <div class="modal-content">
@@ -274,7 +274,7 @@
             </div>
         </div>
 
-        <!-- Map -->
+        @* Kartoversikt *@
         <div class="card shadow-sm">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-map me-2"></i>Map Overview</span>
@@ -294,8 +294,9 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
-        // ---- Leaflet map + row interactions
+        // Leaflet-kart med radinteraksjoner og GeoJSON-støtte
         (function () {
+            // Serialiserer alle hindringer til JSON
             const obstacles = @Html.Raw(JsonSerializer.Serialize(
                 Model.Select(m => new {
                     m.Id,
@@ -305,29 +306,33 @@
                     m.Comment,
                     m.Status,
                     Lat = m.Latitude, 
-                    Lon = m.Longitude
+                    Lon = m.Longitude,
+                    GeometryType = m.GeometryType,
+                    GeoJson = m.GeoJsonData
                 })
             ));
 
+            // Initialiserer kartet (sentrert på Kristiansand)
             const map = L.map('listMap').setView([58.146, 7.995], 12);
             
-            // Satellite base
+            // Grunnlag: Satellittbilde
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
+                maxNativeZoom: 18,
                 attribution: '&copy; Esri'
             }).addTo(map);
             
-            // Labels overlay
+            // Overlag: Etiketter
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 opacity: 0.4,
                 attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            const markers = [];
-            const markerByKey = {};
+            const layers = {};
+            const bounds = [];
 
-            // Define marker colors based on status
+            // Definerer markørfarge basert på status
             const getMarkerIcon = (status) => {
                 const color = status === 'Approved' ? 'green' : 
                               status === 'Rejected' ? 'red' : 
@@ -343,52 +348,106 @@
                 });
             };
 
+            // Definerer linjefarge basert på status (tydelige farger for satellittbilde)
+            const getLineColor = (status) => {
+                return status === 'Approved' ? '#00ffff' :  // Cyan
+                       status === 'Rejected' ? '#ff0066' :  // Magenta
+                       '#ffff00'; // Yellow (Pending)
+            };
+
+            // Går gjennom alle hindringer
             obstacles.forEach(o => {
                 if (o.Lat != null && o.Lon != null) {
-                    const icon = getMarkerIcon(o.Status);
-                    const m = L.marker([o.Lat, o.Lon], { icon: icon }).addTo(map);
-                    
                     const statusBadge = o.Status === 'Approved' ? '✅' : 
                                        o.Status === 'Rejected' ? '❌' : '⏳';
                     
-                    m.bindPopup(
-                        `<strong>${o.ObstacleType ?? 'Obstacle'}</strong> ${statusBadge}<br/>
-                         <small>ID: ${o.Id} | Status: ${o.Status}</small><br/>
-                         ${o.ReporterName ?? ''} – ${o.Organization ?? ''}<br/>
-                         <em>${o.Comment ?? ''}</em>`
-                    );
-                    markers.push(m);
-                    const key = `${Number(o.Lat).toFixed(6)},${Number(o.Lon).toFixed(6)}`;
-                    markerByKey[key] = m;
+                    const popupContent = `
+                        <strong>${o.ObstacleType ?? 'Obstacle'}</strong> ${statusBadge}<br/>
+                        <small>ID: ${o.Id} | Status: ${o.Status}</small><br/>
+                        ${o.ReporterName ?? ''} – ${o.Organization ?? ''}<br/>
+                        <em>${o.Comment ?? ''}</em>
+                    `;
+
+                    let layer;
+
+                    // Hvis GeoJSON finnes, bruk den
+                    if (o.GeoJson && o.GeoJson.trim() !== '') {
+                        try {
+                            const geojson = JSON.parse(o.GeoJson);
+                            
+                            layer = L.geoJSON(geojson, {
+                                style: {
+                                    color: getLineColor(o.Status),
+                                    weight: 4,
+                                    opacity: 0.9
+                                },
+                                pointToLayer: function (feature, latlng) {
+                                    bounds.push([latlng.lat, latlng.lng]);
+                                    return L.marker(latlng, { icon: getMarkerIcon(o.Status) });
+                                },
+                                onEachFeature: function (feature, layer) {
+                                    // Samler bounds for linjer/polygoner
+                                    if (layer.getBounds) {
+                                        const layerBounds = layer.getBounds();
+                                        bounds.push([layerBounds.getNorth(), layerBounds.getEast()]);
+                                        bounds.push([layerBounds.getSouth(), layerBounds.getWest()]);
+                                    }
+                                }
+                            }).addTo(map);
+                            
+                            layer.bindPopup(popupContent);
+                        } catch (e) {
+                            console.error('GeoJSON parse-feil for hinder #' + o.Id, e);
+                            // Tilbakefall til markør
+                            layer = L.marker([o.Lat, o.Lon], { icon: getMarkerIcon(o.Status) }).addTo(map);
+                            layer.bindPopup(popupContent);
+                            bounds.push([o.Lat, o.Lon]);
+                        }
+                    } else {
+                        // Tilbakefall: Bruk bare lat/lng som markør
+                        layer = L.marker([o.Lat, o.Lon], { icon: getMarkerIcon(o.Status) }).addTo(map);
+                        layer.bindPopup(popupContent);
+                        bounds.push([o.Lat, o.Lon]);
+                    }
+
+                    layers[o.Id] = layer;
                 }
             });
 
-            if (markers.length > 0) {
-                const group = L.featureGroup(markers);
-                map.fitBounds(group.getBounds().pad(0.2));
+            // Tilpasser kartet for å vise alle objekter
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
             }
 
-            // Table row -> marker focus (click only, no hover)
-            let activeMarker = null;
+            // Tabell-rad til kartfokus (klikk)
+            let activeLayer = null;
 
             document.querySelectorAll('#obstacleTable tbody tr').forEach(tr => {
-                const lat = tr.dataset.lat, lon = tr.dataset.lon;
-                if (!lat || !lon) return;
-                const key = `${lat},${lon}`;
-                const m = markerByKey[key];
-                if (!m) return;
+                const id = tr.dataset.id;
+                if (!id) return;
                 
                 tr.addEventListener('click', () => {
-                    // Close previous active marker's popup
-                    if (activeMarker && activeMarker !== m) {
-                        activeMarker.closePopup();
+                    if (layers[id]) {
+                        // Lukker forrige aktiv popup
+                        if (activeLayer && activeLayer !== layers[id]) {
+                            activeLayer.closePopup();
+                        }
+                        
+                        activeLayer = layers[id];
+                        
+                        // Hvis det er en GeoJSON-lag (linje/polygon), zoom til bounds
+                        if (layers[id].getBounds) {
+                            map.fitBounds(layers[id].getBounds(), { padding: [50, 50] });
+                        } else {
+                            // Hvis det er en markør, zoom til punktet
+                            const lat = parseFloat(tr.dataset.lat);
+                            const lon = parseFloat(tr.dataset.lon);
+                            if (!isNaN(lat) && !isNaN(lon)) {
+                                map.setView([lat, lon], Math.max(map.getZoom(), 14), { animate: true });
+                            }
+                        }
+                        layers[id].openPopup();
                     }
-                    
-                    // Set this marker as active and keep popup open
-                    activeMarker = m;
-                    const pos = m.getLatLng();
-                    map.setView(pos, Math.max(map.getZoom(), 14), { animate: true });
-                    m.openPopup();
                 });
             });
         })();

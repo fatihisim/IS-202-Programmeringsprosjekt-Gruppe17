@@ -11,7 +11,6 @@
         <p class="text-muted mb-0">Submit a new obstacle report to NRL</p>
     </div>
 
-    @* Bruker-informasjon kort *@
     @* Success feedback (TempData) *@
     @if (TempData["Success"] is string s && !string.IsNullOrWhiteSpace(s))
     {
@@ -25,7 +24,7 @@
     <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert" style="display:none"></div>
 
     <div class="row g-4">
-        <!-- Form column -->
+        @* Formkolonne *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-body">
@@ -68,7 +67,7 @@
                             </div>
                         </div>
 
-                        <!-- Hidden fields -->
+                        @* Skjulte felt *@
                         <input type="hidden" asp-for="GeometryType" />
                         <input type="hidden" asp-for="GeoJsonData" />
 
@@ -91,7 +90,7 @@
             </small>
         </div>
 
-        <!-- Map column -->
+        @* Kartkolonne *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
@@ -108,18 +107,11 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    
-    <!-- Leaflet.draw CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
-    <!-- Leaflet.draw JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
     <script>
@@ -133,17 +125,18 @@
             // Initialiserer kart (sentrert rundt Kristiansand)
             const map = L.map('reportMap').setView([58.146, 7.995], 12);
             
-            // Base layer: Satellite imagery (Esri World Imagery)
+            // Grunnlag: Satellittbilde
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
-                attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+                maxNativeZoom: 18,
+                attribution: '&copy; Esri'
             }).addTo(map);
             
-            // Overlay: OpenStreetMap labels (semi-transparent for hybrid view)
+            // Overlag: Etiketter
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                opacity: 0.4,  // Semi-transparent labels
-                attribution: '&copy; OpenStreetMap contributors'
+                opacity: 0.4,
+                attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
             // Forhindrer utilsiktet zoom ved scrolling
@@ -160,7 +153,7 @@
                 draw: {
                     polyline: {
                         shapeOptions: {
-                            color: '#f357a1',
+                            color: '#00ffff',
                             weight: 4
                         }
                     },
@@ -176,7 +169,7 @@
                             weight: 3
                         }
                     },
-                    rectangle: false,  // Rectangle deaktivert
+                    rectangle: false,
                     marker: {
                         icon: new L.Icon.Default()
                     },
@@ -194,13 +187,13 @@
                 const layer = event.layer;
                 const type = event.layerType;
                 
-                // Fjern tidligere tegninger
+                // Fjerner tidligere tegninger
                 drawnItems.clearLayers();
                 
-                // Legg til ny tegning
+                // Legger til ny tegning
                 drawnItems.addLayer(layer);
                 
-                // Konverter til GeoJSON og lagre
+                // Konverterer til GeoJSON og lagrer
                 const geoJson = layer.toGeoJSON();
                 
                 if (type === 'marker') {
@@ -221,7 +214,7 @@
                     geoJsonInput.value = JSON.stringify(geoJson.geometry);
                 } else if (type === 'polygon') {
                     // Polygon
-                    const latlngs = layer.getLatLngs()[0]; // First ring
+                    const latlngs = layer.getLatLngs()[0];
                     if (latlngs.length > 0) {
                         latInput.value = latlngs[0].lat.toFixed(6);
                         lonInput.value = latlngs[0].lng.toFixed(6);
@@ -229,13 +222,12 @@
                     geoTypeInput.value = 'Polygon';
                     geoJsonInput.value = JSON.stringify(geoJson.geometry);
                 } else if (type === 'circle') {
-                    // Circle (converted to Point with radius)
+                    // Circle (Point med radius)
                     const latlng = layer.getLatLng();
                     const radius = layer.getRadius();
                     latInput.value = latlng.lat.toFixed(6);
                     lonInput.value = latlng.lng.toFixed(6);
                     geoTypeInput.value = 'Circle';
-                    // Store circle as Point with radius property
                     geoJsonInput.value = JSON.stringify({
                         type: "Point",
                         coordinates: [parseFloat(latlng.lng.toFixed(6)), parseFloat(latlng.lat.toFixed(6))],
@@ -264,7 +256,7 @@
                             coordinates: [parseFloat(latlng.lng.toFixed(6)), parseFloat(latlng.lat.toFixed(6))],
                             properties: { radius: radius }
                         });
-                        return; // Skip default geoJson assignment
+                        return;
                     } else if (layer instanceof L.Polygon) {
                         const latlngs = layer.getLatLngs()[0];
                         if (latlngs.length > 0) {
@@ -301,14 +293,14 @@
                     pos => {
                         const { latitude, longitude } = pos.coords;
                         
-                        // Fjern tidligere tegninger
+                        // Fjerner tidligere tegninger
                         drawnItems.clearLayers();
                         
-                        // Legg til ny markør
+                        // Legger til ny markør
                         const marker = L.marker([latitude, longitude]);
                         drawnItems.addLayer(marker);
                         
-                        // Oppdater input
+                        // Oppdaterer input-felt
                         latInput.value = latitude.toFixed(6);
                         lonInput.value = longitude.toFixed(6);
                         geoTypeInput.value = 'Point';

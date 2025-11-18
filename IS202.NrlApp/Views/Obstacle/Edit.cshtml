@@ -32,7 +32,7 @@
     }
 
     <div class="row g-4">
-        <!-- Form column -->
+        @* Formkolonne *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-body">
@@ -75,7 +75,7 @@
                             </div>
                         </div>
 
-                        <!-- Hidden fields -->
+                        @* Skjulte felt *@
                         <input type="hidden" asp-for="GeometryType" />
                         <input type="hidden" asp-for="GeoJsonData" />
 
@@ -110,7 +110,7 @@
             </small>
         </div>
 
-        <!-- Map column -->
+        @* Kartkolonne *@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
@@ -127,18 +127,11 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    
-    <!-- Leaflet.draw CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    
-    <!-- Leaflet.draw JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
     <script>
@@ -149,41 +142,42 @@
             const geoJsonInput = document.getElementById("GeoJsonData");
             const geoBtn = document.getElementById("geoBtn");
 
-            // Get initial values
+            // Henter initielle verdier
             const initialLat = parseFloat(latInput.value) || 58.146;
             const initialLon = parseFloat(lonInput.value) || 7.995;
 
-            // Initialize map
+            // Initialiserer kart
             const map = L.map('editMap').setView([initialLat, initialLon], 12);
             
-            // Base layer: Satellite imagery (Esri World Imagery)
+            // Grunnlag: Satellittbilde
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
-                attribution: '&copy; Esri, Maxar, Earthstar Geographics'
+                maxNativeZoom: 18,
+                attribution: '&copy; Esri'
             }).addTo(map);
             
-            // Overlay: OpenStreetMap labels (semi-transparent for hybrid view)
+            // Overlag: Etiketter
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                opacity: 0.4,  // Semi-transparent labels
-                attribution: '&copy; OpenStreetMap contributors'
+                opacity: 0.4,
+                attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            // Disable scroll wheel zoom
+            // Deaktiverer rullehjulzoom som standard
             map.scrollWheelZoom.disable();
             map.on('focus', () => map.scrollWheelZoom.enable());
             map.on('blur',  () => map.scrollWheelZoom.disable());
 
-            // FeatureGroup for drawings
+            // FeatureGroup for tegninger
             const drawnItems = new L.FeatureGroup();
             map.addLayer(drawnItems);
 
-            // Leaflet.draw controls
+            // Leaflet.draw kontroller
             const drawControl = new L.Control.Draw({
                 draw: {
                     polyline: {
                         shapeOptions: {
-                            color: '#f357a1',
+                            color: '#00ffff',
                             weight: 4
                         }
                     },
@@ -212,7 +206,7 @@
             });
             map.addControl(drawControl);
 
-            // Load existing GeoJSON if available
+            // Laster inn eksisterende GeoJSON hvis tilgjengelig
             if (geoJsonInput.value) {
                 try {
                     const geoJsonData = JSON.parse(geoJsonInput.value);
@@ -226,8 +220,32 @@
                             weight: 3
                         });
                         drawnItems.addLayer(circle);
+                    } else if (geomType === 'LineString') {
+                        // LineString med cyan farge
+                        const layer = L.geoJSON(geoJsonData, {
+                            style: {
+                                color: '#00ffff',
+                                weight: 4,
+                                opacity: 0.9
+                            }
+                        });
+                        layer.eachLayer(function(l) {
+                            drawnItems.addLayer(l);
+                        });
+                    } else if (geomType === 'Polygon') {
+                        // Polygon
+                        const layer = L.geoJSON(geoJsonData, {
+                            style: {
+                                color: '#3388ff',
+                                weight: 3,
+                                opacity: 0.9
+                            }
+                        });
+                        layer.eachLayer(function(l) {
+                            drawnItems.addLayer(l);
+                        });
                     } else {
-                        // Other geometries
+                        // Point (marker)
                         const layer = L.geoJSON(geoJsonData);
                         layer.eachLayer(function(l) {
                             drawnItems.addLayer(l);
@@ -235,22 +253,22 @@
                     }
                     map.fitBounds(drawnItems.getBounds());
                 } catch (e) {
-                    console.log('Could not parse existing GeoJSON');
+                    console.log('Kunne ikke parse eksisterende GeoJSON');
                 }
             }
 
-            // When a shape is created
+            // Når en form tegnes
             map.on(L.Draw.Event.CREATED, function (event) {
                 const layer = event.layer;
                 const type = event.layerType;
                 
-                // Clear previous drawings
+                // Fjerner tidligere tegninger
                 drawnItems.clearLayers();
                 
-                // Add new drawing
+                // Legger til ny tegning
                 drawnItems.addLayer(layer);
                 
-                // Convert to GeoJSON and save
+                // Konverterer til GeoJSON og lagrer
                 const geoJson = layer.toGeoJSON();
                 
                 if (type === 'marker') {
@@ -289,7 +307,7 @@
                 }
             });
 
-            // When a shape is edited
+            // Når en form redigeres
             map.on(L.Draw.Event.EDITED, function (event) {
                 const layers = event.layers;
                 layers.eachLayer(function (layer) {
@@ -322,7 +340,7 @@
                 });
             });
 
-            // When a shape is deleted
+            // Når en form slettes
             map.on(L.Draw.Event.DELETED, function (event) {
                 latInput.value = '';
                 lonInput.value = '';
@@ -330,7 +348,7 @@
                 geoTypeInput.value = '';
             });
 
-            // "Use my location" button
+            // "Use my location" knapp
             geoBtn?.addEventListener('click', () => {
                 if (!navigator.geolocation) {
                     alert('Geolocation is not supported by your browser.');
@@ -340,14 +358,14 @@
                     pos => {
                         const { latitude, longitude } = pos.coords;
                         
-                        // Clear previous drawings
+                        // Fjerner tidligere tegninger
                         drawnItems.clearLayers();
                         
-                        // Add marker at current location
+                        // Legger til markør på nåværende posisjon
                         const marker = L.marker([latitude, longitude]);
                         drawnItems.addLayer(marker);
                         
-                        // Update inputs
+                        // Oppdaterer input-felt
                         latInput.value = latitude.toFixed(6);
                         lonInput.value = longitude.toFixed(6);
                         geoTypeInput.value = 'Point';
@@ -363,7 +381,7 @@
                 );
             });
 
-            // Show validation summary only if there are errors
+            // Viser validation summary bare hvis det er feil
             const vs = document.querySelector('[asp-validation-summary="ModelOnly"]');
             if (vs && vs.innerText.trim().length > 0) vs.style.display = 'block';
         })();
