@@ -61,6 +61,8 @@ cd IS-202-Programmeringsprosjekt-Gruppe17
 docker-compose up -d
 ```
 
+**NB:** Bruk `oppgave2` branch - dette er den mest oppdaterte versjonen.
+
 **Applikasjonen er tilgjengelig på:**  
 👉 **http://localhost:8080**
 
@@ -136,7 +138,7 @@ Applikasjonen følger **Model-View-Controller (MVC)** arkitekturen med tydelig l
                     │
 ┌───────────────────▼─────────────────────────────────┐
 │              Model-laget                            │
-│   - ApplicationUser (brukere)                       │
+│   - IdentityUser (brukere - Identity)               │
 │   - Obstacle (hindringer)                           │
 │   - ViewModels (skjemaer)                           │
 └───────────────────┬─────────────────────────────────┘
@@ -159,10 +161,10 @@ Applikasjonen følger **Model-View-Controller (MVC)** arkitekturen med tydelig l
 
 ### **Datamodell:**
 
-#### **ApplicationUser (ASP.NET Identity)**
-- Id, FullName, Email, PhoneNumber
+#### **IdentityUser (ASP.NET Identity)**
+- Id, Email, PasswordHash, PhoneNumber
 - Role (Pilot / Registerfører)
-- Organization
+- Brukes for autentisering og autorisasjon
 
 #### **Obstacle**
 - Id, ObstacleType, Comment
