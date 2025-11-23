@@ -9,21 +9,20 @@ using IS202.NrlApp.Models;
 namespace IS202.NrlApp.Controllers
 {
     /// <summary>
-    /// Controller som håndterer alle operasjoner relatert til luftfartshindringer.
-    /// Inkluderer registrering, visning, godkjenning/avvisning og redigering av rapporter.
+    /// Controller for alle operasjoner knyttet til rapportering og håndtering av luftfartshindringer. 
+    /// Inkluderer visning, filtrering, innsending, godkjenning, redigering og sletting av rapporter. 
     /// </summary>
     public class ObstacleController : Controller
     {
         private readonly AppDbContext _db;
 
         /// <summary>
-        /// Konstruktør som injiserer databasekontekst.
+        /// Initialiserer controlleren med databasekontekst via dependency injection. 
         /// </summary>
         public ObstacleController(AppDbContext db) => _db = db;
 
         /// <summary>
-        /// Returnerer nåværende tidspunkt i norsk tidssone (CET/CEST).
-        /// Konverterer fra UTC til Europa/Oslo tidssone.
+        /// Henter nåværende tidspunkt i norsk tidssone (CET/CEST)
         /// </summary>
         private DateTime GetNorwegianTime()
         {
@@ -32,38 +31,39 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Viser alle hindringer med mulighet for filtrering (tilgjengelig for alle).
+        /// Viser alle hindringer med mulighet for filtrering etter status og type. 
+        /// Tilgjengelig for alle brukere. 
         /// </summary>
         [HttpGet]
         public IActionResult List(string statusFilter = "", string typeFilter = "")
         {
-            // Hent ALLE rapporter for statistikk
+            // Henter alle rapporter ufiltrert for statistikkvisning
             var allReports = _db.Obstacles.ToList();
             
-            // Beregn statistikk fra ALLE rapporter (ufiltrert)
+            // Statistikk (ufiltrert) 
             ViewBag.TotalCount = allReports.Count;
             ViewBag.PendingCount = allReports.Count(o => o.Status == "Pending");
             ViewBag.ApprovedCount = allReports.Count(o => o.Status == "Approved");
             ViewBag.RejectedCount = allReports.Count(o => o.Status == "Rejected");
 
-            // Deretter filtrer for tabellen
+            // Deretter filtreres kun tabellvisningen 
             var query = allReports.AsQueryable();
 
-            // Filtrer etter status
+            // Filtrer på status 
             if (!string.IsNullOrEmpty(statusFilter) && statusFilter != "All")
             {
                 query = query.Where(o => o.Status == statusFilter);
             }
 
-            // Filtrer etter type
+            // Filtrer på type 
             if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "All")
             {
                 query = query.Where(o => o.ObstacleType == typeFilter);
             }
-
+            /// Sortere nyeste først 
             var filteredReports = query.OrderByDescending(o => o.CreatedAt).ToList();
 
-            // Send filtervalg til view
+            // Sender valgte filter ti View
             ViewBag.StatusFilter = statusFilter;
             ViewBag.TypeFilter = typeFilter;
 
@@ -71,7 +71,8 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Viser bare brukerens egne hindringer (krever innlogging).
+        /// Viser kun innlogget brukers egne rapporter. 
+        /// Støtter filtrering etter status og type. 
         /// </summary>
         [HttpGet]
         [Authorize]
@@ -79,19 +80,19 @@ namespace IS202.NrlApp.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             
-            // Hent ALLE brukerens rapporter først for statistikk
+            // Hent alle rapporter brukeren har sendt inn (før filtrering)
             var allMyReports = _db.Obstacles.Where(o => o.UserId == userId).ToList();
             
-            // Beregn statistikk fra ALLE rapporter (ufiltrert)
+            // Statistikk til dashboardet 
             ViewBag.TotalCount = allMyReports.Count;
             ViewBag.PendingCount = allMyReports.Count(o => o.Status == "Pending");
             ViewBag.ApprovedCount = allMyReports.Count(o => o.Status == "Approved");
             ViewBag.RejectedCount = allMyReports.Count(o => o.Status == "Rejected");
 
-            // Deretter filtrer for tabellen
+            
             var query = allMyReports.AsQueryable();
 
-            // Filtrer etter status
+            //Filtrer etter status 
             if (!string.IsNullOrEmpty(statusFilter) && statusFilter != "All")
             {
                 query = query.Where(o => o.Status == statusFilter);
@@ -113,8 +114,8 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Dashboard for Registerfører - viser alle rapporter med behandlingsverktøy.
-        /// Kun tilgjengelig for Registerfører og Admin.
+        /// Dashboard for Registerfører og Admin. 
+        /// Viser alle rapporter og gir verktøy for behandling (approve/reject)
         /// </summary>
         [HttpGet]
         [Authorize]
@@ -122,23 +123,23 @@ namespace IS202.NrlApp.Controllers
         {
             var userRole = User.FindFirst("Role")?.Value;
             
-            // Sjekker om brukeren er Registerfører eller Admin
+            // Sjekker tilgang 
             if (userRole != "Registerfører" && userRole != "Admin")
             {
                 TempData["Error"] = "You do not have permission to access the Dashboard.";
                 return RedirectToAction("Index", "Home");
             }
 
-            // Henter ALLE rapporter for statistikk (uavhengig av filter)
+            // Henter alle rapporter (før filtrering) for statistikk 
             var allObstacles = _db.Obstacles.ToList();
             
-            // Beregner statistikk fra ALLE rapporter
+    
             ViewBag.TotalCount = allObstacles.Count;
             ViewBag.PendingCount = allObstacles.Count(o => o.Status == "Pending");
             ViewBag.ApprovedCount = allObstacles.Count(o => o.Status == "Approved");
             ViewBag.RejectedCount = allObstacles.Count(o => o.Status == "Rejected");
 
-            // Henter filtrerte rapporter for tabell og kart
+            // Filtrer tabell og kart 
             var query = _db.Obstacles.AsQueryable();
 
             // Filtrer etter status
@@ -153,7 +154,7 @@ namespace IS202.NrlApp.Controllers
                 query = query.Where(o => o.ObstacleType == typeFilter);
             }
 
-            // Sorter etter status (Pending → Rejected → Approved) og deretter CreatedAt
+            // Sorterer: Pending - rejected - approved 
             var filteredObstacles = query
                 .OrderBy(o => o.Status == "Pending" ? 0 : o.Status == "Rejected" ? 1 : 2)
                 .ThenByDescending(o => o.CreatedAt)
@@ -167,7 +168,8 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Godkjenner en rapport (bare Registerfører og Admin).
+        /// Godkjenner en rapport. 
+        /// Kun registerfører eller Admin. 
         /// </summary>
         [HttpPost]
         [Authorize]
@@ -175,7 +177,7 @@ namespace IS202.NrlApp.Controllers
         public IActionResult Approve(int id, string? feedback)
         {
             var userRole = User.FindFirst("Role")?.Value;
-            
+            /// Tilgangssjekk 
             if (userRole != "Registerfører" && userRole != "Admin")
             {
                 TempData["Error"] = "You do not have permission to approve reports.";
@@ -189,7 +191,7 @@ namespace IS202.NrlApp.Controllers
                 TempData["Error"] = "Obstacle not found.";
                 return RedirectToAction(nameof(Dashboard));
             }
-
+             /// Oppdaterer status og metadata 
             obstacle.Status = "Approved";
             obstacle.ProcessedBy = User.FindFirstValue("FullName") ?? User.Identity?.Name;
             obstacle.ProcessedAt = GetNorwegianTime();
@@ -202,7 +204,8 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Avviser en rapport (bare Registerfører og Admin).
+        /// Avviser en rapport. 
+        /// Kun Registerfører. 
         /// </summary>
         [HttpPost]
         [Authorize]
@@ -237,7 +240,7 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Viser rapporterings-skjema med interaktivt kart (krever innlogging).
+        /// Viser rapporteringsskjema der brukeren kan registrere en ny hindring. 
         /// </summary>
         [HttpGet]
         [Authorize]
@@ -247,8 +250,8 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Mottar og lagrer en ny hindring fra pilot (krever innlogging).
-        /// Brukerinformasjon hentes automatisk fra claims.
+        /// Lagrer ny innsendt hindringsrapport. 
+        /// Henter brukerdata fra Claims. 
         /// </summary>
         [HttpPost]
         [Authorize]
@@ -258,7 +261,7 @@ namespace IS202.NrlApp.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            // Henter bruker-informasjon automatisk fra claims
+            // Henter brukerinformasjo fra claims
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userName = User.FindFirstValue("FullName") ?? User.Identity?.Name ?? "Unknown User";
             var organization = User.FindFirstValue("Organization") ?? "Not specified";
@@ -287,7 +290,7 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Fullskjerm kartvisning av alle hindringer.
+        /// Viser alle hindringer i kartvisning. 
         /// </summary>
         [HttpGet]
         public IActionResult Overview()
@@ -300,8 +303,8 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Viser redigeringsskjema for en hindring (krever innlogging).
-        /// Sjekker tillatelser basert på eierskap og rolle.
+        /// Viser redigeringsskjema for en valgt hindringsrapport. 
+        /// Sjekker at brukeren har riktig rolle eller eier rapporten. 
         /// </summary>
         [HttpGet]
         [Authorize]
@@ -315,7 +318,7 @@ namespace IS202.NrlApp.Controllers
                 return RedirectToAction(nameof(MyReports));
             }
 
-            // Sjekker om brukeren eier rapporten eller er Registerfører/Admin
+            // Sjekker tilgang 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirst("Role")?.Value;
             
@@ -332,7 +335,7 @@ namespace IS202.NrlApp.Controllers
                 return RedirectToAction(nameof(MyReports));
             }
 
-            // Konverterer til ViewModel
+            // Oppretter ViewModel 
             var model = new ObstacleData
             {
                 ObstacleType = obstacle.ObstacleType,
@@ -349,8 +352,10 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Håndterer redigering av en hindring (krever innlogging).
-        /// Pilot-redigering av avvist rapport setter status tilbake til Pending.
+        /// Behandler redigering av hindringsrapport. 
+        /// Rolle og eierskapssjekk styrer hvilke handlinger som er tillatt. 
+        /// Piloter som redigerer en avvist rapport setter statusen tilbake til Pending. 
+        /// Registerfører/Admin godkjenner autimatisk endringen. 
         /// </summary>
         [HttpPost]
         [Authorize]
@@ -371,7 +376,7 @@ namespace IS202.NrlApp.Controllers
                 return RedirectToAction(nameof(MyReports));
             }
 
-            // Sjekker tillatelse
+            // Henter brukerrolle og eierskap 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirst("Role")?.Value;
             
@@ -435,8 +440,8 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Sletter en hindring (krever innlogging).
-        /// Piloter kan ikke slette godkjente rapporter.
+        /// Sletter en hindringsrapport. Kun eier, Regiserfører eller Admin kan slette. 
+        /// Piloter kan ikke slette godkjente rapporter. 
         /// </summary>
         [HttpPost]
         [Authorize]
@@ -471,7 +476,7 @@ namespace IS202.NrlApp.Controllers
                 else
                     return RedirectToAction(nameof(MyReports));
             }
-
+            /// utfører sletting 
             _db.Obstacles.Remove(obstacle);
             _db.SaveChanges();
 

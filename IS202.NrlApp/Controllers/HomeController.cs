@@ -11,7 +11,7 @@ using IS202.NrlApp.Data;
 namespace IS202.NrlApp.Controllers
 {
     /// <summary>
-    /// Controller som håndterer hovedsiden, personvernsiden og feilmeldinger.
+    /// Controller for hovedsiden, personvernsiden og feilhåndteringer. 
     /// </summary>
     public class HomeController : Controller
     {
@@ -19,7 +19,7 @@ namespace IS202.NrlApp.Controllers
         private readonly AppDbContext _context;
 
         /// <summary>
-        /// Konstruktør som mottar logger og databasekontekst.
+        /// Initaliserer Homecontroller med logger og databasekontekst via dependency injection.
         /// </summary>
         public HomeController(ILogger<HomeController> logger, AppDbContext context)
         {
@@ -28,14 +28,14 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Viser startsiden (Index) med dynamisk antall hindre.
+        /// Viser startsiden (Index) og henter antall registrerte hindringer fra databasen.
         /// </summary>
         public async Task<IActionResult> Index()
         {
-            // Teller antall hindringer (obstacles) i databasen
+            // Henter antall registrerte hindringer i databasen. 
             int obstacleCount = await _context.Obstacles.CountAsync();
 
-            // Sender antallet til View via ViewBag
+            // Gjør verdien tilgjengelig i View via ViewBag
             ViewBag.ObstacleCount = obstacleCount;
 
             return View();
@@ -50,8 +50,8 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Test-side for å sjekke brukerens claims og roller.
-        /// Brukes til å verifisere at rolle-systemet fungerer korrekt.
+        /// Debug side som viser alle claims og roller til innlogget bruker. 
+        /// Brukes for å teste at autentisering og roller fungerer som forventet. 
         /// </summary>
         [Authorize]
         public IActionResult TestRoles()
@@ -62,7 +62,7 @@ namespace IS202.NrlApp.Controllers
             var role = User.FindFirstValue("Role");
             var organization = User.FindFirstValue("Organization");
             var phoneNumber = User.FindFirstValue("PhoneNumber");
-            
+        /// Henter alle claims som en liste for visning i View 
             var allClaims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
 
             ViewBag.UserId = userId;
@@ -77,7 +77,7 @@ namespace IS202.NrlApp.Controllers
         }
 
         /// <summary>
-        /// Viser feilmeldingssiden dersom en feil oppstår.
+        /// Viser feilmeldingssiden dersom en uventet feil oppstår i applikasjonen. 
         /// </summary>
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
