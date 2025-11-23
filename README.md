@@ -1,37 +1,78 @@
 # Programmeringsprosjekt (IS-202) – Gruppe 17  
 **Applikasjon:** NRL Hindringsrapportering (Obstacle Reporting)
 
-## Prosjektoversikt
+## 📋 Prosjektoversikt
+
 Dette prosjektet er utviklet som en del av emnet **Programmeringsprosjekt (IS-202)** ved Universitetet i Agder.  
-Applikasjonen er en **ASP.NET Core MVC-løsning** som lar brukere **registrere og visualisere hindringer (obstacles)** på et kart.  
-Løsningen er laget for **NRL-systemet**, der piloter og teknisk personell kan rapportere hindringer som påvirker flysikkerhet.
 
-Systemet består av:
-- **Brukergrensesnitt (View):** responsive nettsider laget med Bootstrap og Leaflet-kart.
-- **Forretningslogikk (Controller):** håndterer GET- og POST-forespørsler, datavalidering og kommunikasjon med databasen.
-- **Datamodell (Model):** representerer hindringsinformasjon lagret i en SQLite-database via Entity Framework Core.
-- **Docker-miljø:** applikasjonen kjører i en container basert på ASP.NET 9.0 med SQLite-støtte.
+Applikasjonen er en **ASP.NET Core MVC-løsning** som lar brukere **registrere og visualisere hindringer (obstacles)** på et interaktivt kart med satellittbilder.  
 
-Brukeren kan:
-1. Åpne et skjema for å registrere en ny hindring.  
-2. Klikke på kartet for å hente **koordinater (lat/lng)** automatisk.  
-3. Sende inn skjemaet via **POST** og få bekreftelse i en **egen oversiktsside**.  
-4. Se alle registrerte hindringer i en tabell og på et dynamisk kart.
+Løsningen er laget for **NRL-systemet** (Nasjonal registeringsløsning luftfartshindringer), der piloter kan rapportere hindringer som påvirker flysikkerhet, og registerførere kan godkjenne eller avvise rapportene.
 
-Applikasjonen følger **MVC-arkitekturen** og benytter både **server- og klientsidevalidering**.  
-All kode og dokumentasjon er tilgjengelig på **GitHub**, og løsningen kan kjøres enten **lokalt** eller i en **Docker-container**.
+### **Hovedfunksjoner:**
+- ✅ **Brukerautentisering** med ASP.NET Core Identity
+- ✅ **Rollebasert tilgang** (Pilot og Registerfører)
+- ✅ **Interaktivt kart** med Leaflet.js (satellittbilder + etiketter)
+- ✅ **GeoJSON-støtte** for punkter, linjer, polygoner og sirkler
+- ✅ **CRUD-operasjoner** (Create, Read, Update, Delete)
+- ✅ **Godkjenningsworkflow** for registerførere
+- ✅ **Mobilresponsivt design** med Bootstrap 5
+- ✅ **Docker-deployment** med MariaDB
 
-## Drift (Kjøring og Konfigurasjon)
+---
 
-Denne applikasjonen kan kjøres både **lokalt** og i **Docker-container** uten ekstra oppsett.  
-Ved første oppstart opprettes databasen automatisk, og applikasjonen er klar til bruk.
+## 🛠️ Teknologier
 
-### Krav
-- **.NET SDK 9.0**
-- *(Valgfritt)* **Docker** installert
+### **Backend:**
+- ASP.NET Core 8.0 (MVC)
+- C# 12
+- Entity Framework Core 8.0
+- ASP.NET Core Identity (autentisering)
+- MariaDB 11.0
 
-### Lokal kjøring
-For å starte applikasjonen lokalt:
+### **Frontend:**
+- Razor Pages
+- Bootstrap 5.3
+- Leaflet.js 1.9.4 (kartbibliotek)
+- Leaflet.draw (tegning på kart)
+- Esri World Imagery (satellittbilder)
+- OpenStreetMap (etiketter)
+
+### **DevOps:**
+- Docker + Docker Compose
+- Git & GitHub
+
+---
+
+## 🚀 Drift (Kjøring og Konfigurasjon)
+
+### **Krav:**
+- Docker Desktop
+- .NET SDK 8.0 (for lokal utvikling)
+
+### **1. Kjøring med Docker (Anbefalt)**
+
+```bash
+# Klon repository
+git clone https://github.com/your-group/IS-202-Programmeringsprosjekt-Gruppe17.git
+cd IS-202-Programmeringsprosjekt-Gruppe17
+
+# Start applikasjon og database
+docker-compose up -d
+```
+
+**Applikasjonen er tilgjengelig på:**  
+👉 **http://localhost:8080**
+
+**Database:**  
+- MariaDB kjører automatisk i container
+- Database opprettes automatisk ved første oppstart
+
+---
+
+### **2. Lokal kjøring (Utviklingsmiljø)**
+
+**NB:** Anbefalt metode er Docker. For lokal utvikling:
 
 ```bash
 cd IS202.NrlApp
@@ -39,106 +80,283 @@ dotnet restore
 dotnet run
 ```
 
+**Applikasjonen kjører på:**  
+👉 Port bestemmes av `launchSettings.json` (vanligvis 5048 eller 5000)  
+👉 Sjekk terminal output for nøyaktig URL
 
-Applikasjonen kjører deretter på:  
-👉 **http://localhost:5048**
+**NB:** Krever lokal MariaDB installasjon eller endre `appsettings.json` til SQLite.
 
-Databasen `app.db` opprettes automatisk første gang applikasjonen kjøres.
+---
 
-### **Docker-kjøring**
+### **3. Konfigurasjon**
 
-For å kjøre applikasjonen i container:
+#### **Database Connection String:**
 
-```bash
-cd IS202.NrlApp
-docker build -t nrl-app .
-docker run -p 8080:8080 nrl-app
-```
-
-Applikasjonen er da tilgjengelig på:  
-👉 **http://localhost:8080**
-
-### **Konfigurasjon**
-
-Applikasjonen bruker SQLite som standard:
+I `appsettings.json`:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Data Source=app.db"
+    "DefaultConnection": "Server=nrl-mariadb;Port=3306;Database=nrldb;User=nrluser;Password=YourPassword;"
   }
 }
-
 ```
 
-For produksjon kan miljøvariabelen  
-`ConnectionStrings__DefaultConnection` brukes til å definere ekstern database.
-
-## Systemarkitektur
-
-Applikasjonen er bygget med **ASP.NET Core MVC** og følger prinsippene for **Model–View–Controller**-arkitekturen.  
-Løsningen består av tydelig adskilte lag for datahåndtering, forretningslogikk og presentasjon, og kjøres i et container-miljø via Docker.
-
-### Oversikt
-```
-┌───────────────────────────────────────────────┐
-│ Brukergrensesnitt │
-│ (HTML, CSS, Bootstrap, Leaflet, Razor Views) │
-└───────────────────────────────────────────────┘
-│ ▲
-GET/POST │ │ Dynamisk innhold
-▼ │
-┌───────────────────────────────────────────────┐
-│ Controller-laget │
-│ (Håndterer forespørsler, validering, logikk) │
-└───────────────────────────────────────────────┘
-│
-▼
-┌───────────────────────────────────────────────┐
-│ Modell-laget │
-│ (Entity Framework Core, SQLite database) │
-│ Henter, lagrer og oppdaterer data │
-└───────────────────────────────────────────────┘
-│
-▼
-┌───────────────────────────────────────────────┐
-│ Docker-miljø │
-│ (ASP.NET 9.0 image, EXPOSE 8080, app.db) │
-└───────────────────────────────────────────────┘
+For lokal MariaDB:
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Port=3306;Database=nrldb;User=root;Password=YourPassword;"
+  }
+}
 ```
 
-### Forklaring
-- **View:** presenterer data og kartinformasjon ved bruk av **Razor Pages** og **Leaflet**.  
-- **Controller:** mottar brukerforespørsler, utfører validering, og sender data mellom View og Model.  
-- **Model:** definerer dataobjekter (hindringer) og håndterer databaseoperasjoner via **Entity Framework Core**.  
-- **Database:** bruker **SQLite** som lagringsløsning.  
-- **Docker:** sørger for portabilitet og enkel distribusjon.
+---
 
-Denne strukturen gir en **tydelig separasjon av ansvar**, enkel vedlikehold, og gjør systemet lett å utvide i fremtidige versjoner.
+## 🏗️ Systemarkitektur
 
-## Testing (Testscenarier og Resultater)
+Applikasjonen følger **Model-View-Controller (MVC)** arkitekturen med tydelig lagdeling.
 
-Det ble gjennomført manuell testing for å sikre at applikasjonen fungerer som forventet, både lokalt og i Docker-container.  
-Fokuset var på **funksjonalitet, validering, og dataintegritet**.
+```
+┌─────────────────────────────────────────────────────┐
+│              Brukergrensesnitt (View)               │
+│    Razor Pages, Bootstrap, Leaflet.js, GeoJSON     │
+└───────────────────┬─────────────────────────────────┘
+                    │
+          HTTP GET/POST Requests
+                    │
+┌───────────────────▼─────────────────────────────────┐
+│            Controller-laget                         │
+│   - AccountController (autentisering)               │
+│   - ObstacleController (CRUD, godkjenning)          │
+│   - HomeController (offentlige sider)               │
+└───────────────────┬─────────────────────────────────┘
+                    │
+         EF Core LINQ Queries
+                    │
+┌───────────────────▼─────────────────────────────────┐
+│              Model-laget                            │
+│   - ApplicationUser (brukere)                       │
+│   - Obstacle (hindringer)                           │
+│   - ViewModels (skjemaer)                           │
+└───────────────────┬─────────────────────────────────┘
+                    │
+         Database Queries
+                    │
+┌───────────────────▼─────────────────────────────────┐
+│          Database (MariaDB 11.0)                    │
+│   - AspNetUsers (Identity-tabeller)                 │
+│   - Obstacles (hindringer med GeoJSON)              │
+└─────────────────────────────────────────────────────┘
+                    │
+┌───────────────────▼─────────────────────────────────┐
+│            Docker-miljø                             │
+│   - nrl-web-app container (ASP.NET Core)            │
+│   - nrl-mariadb container (MariaDB)                 │
+│   - nrl-network (bridge network)                    │
+└─────────────────────────────────────────────────────┘
+```
 
-### Testoppsett
-- **Miljø:** Windows 11, .NET 9.0, Docker Desktop  
-- **Database:** SQLite (`app.db`)  
-- **Verktøy:** Nettleser (Chrome/Edge), Postman for HTTP-forespørsler  
+### **Datamodell:**
 
-### Testscenarier
+#### **ApplicationUser (ASP.NET Identity)**
+- Id, FullName, Email, PhoneNumber
+- Role (Pilot / Registerfører)
+- Organization
 
-| Nr. | Scenario                    | Handling                                                          | Forventet resultat                                           | Status |
-|-----|-----------------------------|-------------------------------------------------------------------|--------------------------------------------------------------|--------|
-| 1   | Hente startsiden            | Åpne `http://localhost:5048`                                      | Nettsiden lastes uten feil                                   | ✅     |
-| 2   | Opprette ny hindring        | Fylle ut skjemaet og sende **POST**                               | Hindringen lagres og vises i oversikten                      | ✅     |
-| 3   | Manglende obligatorisk felt | Sende skjema uten tittel                                          | Valideringsfeil vises på skjermen                            | ✅     |
-| 4   | Hente data fra kartet       | Klikke på Leaflet-kartet                                          | Koordinater fylles automatisk i skjemaet                     | ✅     |
-| 5   | Vise oversiktsside          | Navigere til “Hindringsliste”                                     | Alle registrerte hindringer vises                            | ✅     |
-| 6   | Kjøre applikasjonen i Docker| `docker build` og `docker run -p 8080:8080 nrl-app`               | Applikasjonen tilgjengelig på `http://localhost:8080`        | ✅     |
+#### **Obstacle**
+- Id, ObstacleType, Comment
+- Latitude, Longitude
+- **GeometryType** (Point / LineString / Polygon / Circle)
+- **GeoJsonData** (full GeoJSON-geometri)
+- Status (Pending / Approved / Rejected)
+- ReporterId, ProcessedBy, Feedback
+- CreatedAt, ProcessedAt
 
-### Resultat
-Alle testene ble **godkjent** uten feil.  
-Databasen opprettes automatisk, POST-forespørsler lagres korrekt, og valideringen fungerer både på klient- og serversiden.  
-Systemet oppfører seg likt i både **lokalt miljø og Docker-miljø**.
+---
 
+## 👥 Brukerroller
+
+### **1. Pilot**
+**Funksjonalitet:**
+- ✅ Registrere seg som ny bruker
+- ✅ Logge inn
+- ✅ Rapportere nye hindringer (punkt, linje, polygon, sirkel)
+- ✅ Se egne rapporter (MyReports)
+- ✅ Redigere pending/rejected rapporter
+- ✅ Slette pending/rejected rapporter
+- ✅ Motta tilbakemelding fra registerførere
+
+### **2. Registerfører (NRL-offiser)**
+**Funksjonalitet:**
+- ✅ Dashboard med oversikt over alle rapporter
+- ✅ Se pending rapporter
+- ✅ Godkjenne rapporter med tilbakemelding
+- ✅ Avvise rapporter med tilbakemelding
+- ✅ Se alle godkjente hindringer på kart
+
+---
+
+## 🗺️ Kartfunksjonalitet
+
+### **Leaflet.js + Leaflet.draw**
+
+Applikasjonen støtter følgende geometrityper:
+
+| Type | Beskrivelse | Bruksområde |
+|------|-------------|-------------|
+| **Point** 📍 | Enkelt punkt | Tårn, mast, kran |
+| **LineString** ━ | Linje mellom punkter | Kraftlinjer (cyan farge) |
+| **Polygon** ⬟ | Område/bygning | Bygninger, industriområder |
+| **Circle** ⭕ | Sirkel med radius | Faresoner |
+
+### **Kartlag:**
+1. **Grunnlag:** Esri World Imagery (satellittbilder)
+2. **Overlay:** OpenStreetMap etiketter (semi-transparent)
+
+### **Interaksjon:**
+- Klikk på kart → Plasser marker
+- Tegn linje → Velg linjeverktøy, klikk punkter
+- Tegn polygon → Velg polygon-verktøy, klikk hjørner
+- Tegn sirkel → Velg sirkelverktøy, dra for radius
+- **"Use my location"** → Automatisk GPS-posisjon
+
+**GeoJSON lagres i database for presis gjengivelse!**
+
+---
+
+## 🧪 Testing
+
+Applikasjonen er testet gjennom manuelle tester i følgende kategorier:
+
+### **1. Enhetstesting**
+
+Testing av individuelle komponenter og funksjoner:
+
+| Test | Beskrivelse | Forventet resultat | Status |
+|------|-------------|-------------------|--------|
+| **User Registration** | Registrere ny bruker med gyldig data | Bruker opprettes i database | ✅ |
+| **Login Authentication** | Logge inn med korrekt e-post/passord | Redirect til dashboard | ✅ |
+| **Create Obstacle (Point)** | Rapportere hindring med punkt | Lagres med status "Pending" | ✅ |
+| **Create Obstacle (Line)** | Rapportere kraftlinje med linje | GeoJSON LineString lagres med cyan farge | ✅ |
+| **Create Obstacle (Polygon)** | Rapportere bygning med polygon | GeoJSON Polygon lagres | ✅ |
+| **Edit Own Report** | Pilot redigerer pending-rapport | Endringer lagres | ✅ |
+| **Delete Own Report** | Pilot sletter pending-rapport | Rapport fjernes fra database | ✅ |
+
+**Resultat:** 7/7 tester bestått ✅
+
+---
+
+### **2. Systemstesting**
+
+End-to-end testing av arbeidsflyten:
+
+#### **Scenario 1: Komplett rapporteringsflyt**
+**Steg:**
+1. Pilot registrerer seg og logger inn
+2. Rapporterer en hindring med punkt på kart
+3. Navigerer til "My Reports" → Ser "Pending" status
+4. Registerfører logger inn og ser rapporten i Dashboard
+5. Godkjenner rapporten med tilbakemelding
+6. Pilot ser "Approved" status og tilbakemelding
+
+**Resultat:** ✅ PASSED
+
+---
+
+#### **Scenario 2: Kraftlinje med cyan farge**
+**Steg:**
+1. Pilot logger inn og velger "Power line"
+2. Tegner **linje** på kart (2 punkter)
+3. Sender inn → GeoJSON LineString lagres
+4. Navigerer til Overview → Linjen vises i **cyan farge** (#00ffff)
+
+**Resultat:** ✅ PASSED
+
+---
+
+### **3. Sikkerhetstesting**
+
+Grunnleggende sikkerhetstesting:
+
+| Test | Beskrivelse | Resultat |
+|------|-------------|----------|
+| **Access Control** | Pilot prøver å åpne admin dashboard (`/Obstacle/Dashboard`) | ✅ Blokkert (redirect til login) |
+| **Password Hashing** | Sjekk database - er passord lagret i klartekst? | ✅ Hashet (ikke lesbart) |
+| **CSRF Protection** | POST-request uten AntiForgeryToken | ✅ Request blokkert |
+
+**Sikkerhetstiltak implementert:**
+- ✅ ASP.NET Core Identity (autentisering)
+- ✅ PBKDF2 password hashing
+- ✅ Role-based authorization
+- ✅ AntiForgeryToken på alle POST-skjemaer
+- ✅ EF Core parameteriserte queries (SQL injection-beskyttelse)
+- ✅ Razor auto-encoding (XSS-beskyttelse)
+
+**Resultat:** 3/3 sikkerhetstester bestått ✅
+
+---
+
+### **4. Brukervennlighetstesting**
+
+Manuell testing med faktiske brukere:
+
+#### **Scenario: Mobil rapportering**
+- **Enheter testet:** iPhone, Android
+- **Oppgave:** Rapporter hindring fra mobil enhet
+- **Resultat:** ✅ Fungerer godt (responsivt design)
+- **Tilbakemelding:** "Intuitiv å bruke, kartet fungerer bra"
+
+---
+
+### **📊 Test Oppsummering**
+
+| Kategori | Antall Tester | Resultat |
+|----------|---------------|----------|
+| **Enhetstesting** | 7 | ✅ 100% |
+| **Systemstesting** | 2 scenarier | ✅ 100% |
+| **Sikkerhetstesting** | 3 | ✅ 100% |
+| **Brukervennlighetstesting** | 1 | ✅ 100% |
+| **TOTALT** | **13 tester** | ✅ **100%** |
+
+---
+
+### **🎯 Test Konklusjon**
+
+**Funksjonalitet:** ✅ Alle hovedfunksjoner fungerer som forventet  
+**Sikkerhet:** ✅ Grunnleggende sikkerhetstiltak implementert  
+**Brukervennlighet:** ✅ Responsivt design fungerer på mobil og desktop  
+**Kompatibilitet:** ✅ Testet i Chrome, Firefox og Safari  
+
+**Status:** ✅ **Applikasjonen fungerer som spesifisert**
+
+---
+
+## 🔒 Sikkerhet
+
+### **Implementerte sikkerhetstiltak:**
+- ✅ **ASP.NET Core Identity** for autentisering
+- ✅ **PBKDF2** password hashing
+- ✅ **Role-based authorization** (Pilot, Registerfører)
+- ✅ **AntiForgeryToken** (CSRF-beskyttelse)
+- ✅ **EF Core** parameteriserte queries (SQL injection-beskyttelse)
+- ✅ **Razor** auto-encoding (XSS-beskyttelse)
+- ✅ **HTTPS** enforcement (produksjon)
+- ✅ **Input validation** (server + klient)
+
+---
+
+## 👥 Bidragsytere
+
+**Gruppe 17 - Universitetet i Agder**  
+**Emne:** IS-202 - Programmeringsprosjekt
+
+---
+
+## 📄 Lisens
+
+Dette prosjektet er utviklet som en del av undervisningen ved Universitetet i Agder.
+
+---
+
+**Bygget med ❤️ av Gruppe 17 ved UiA**
