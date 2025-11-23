@@ -53,8 +53,8 @@ Løsningen er laget for **NRL-systemet** (Nasjonal registeringsløsning luftfart
 ### **1. Kjøring med Docker (Anbefalt)**
 
 ```bash
-# Klon repository
-git clone https://github.com/your-group/IS-202-Programmeringsprosjekt-Gruppe17.git
+# Klon repository (oppgave2 branch)
+git clone -b oppgave2 https://github.com/fatihisim/IS-202-Programmeringsprosjekt-Gruppe17.git
 cd IS-202-Programmeringsprosjekt-Gruppe17
 
 # Start applikasjon og database
