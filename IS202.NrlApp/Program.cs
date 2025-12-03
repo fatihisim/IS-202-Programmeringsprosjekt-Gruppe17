@@ -98,6 +98,68 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// --------------------------------------------------------
+// HTTP Sikkerhets-headere (Security Headers)
+// Beskytter mot vanlige webangrepsvektorer
+// --------------------------------------------------------
+app.Use(async (context, next) =>
+{
+    // X-Content-Type-Options: Forhindrer MIME-type sniffing
+    // Nettleseren vil ikke gjette innholdstypen, noe som kan forhindre XSS-angrep
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    
+    // X-Frame-Options: Beskytter mot clickjacking-angrep
+    // DENY = siden kan ikke vises i en iframe i det hele tatt
+    // SAMEORIGIN = siden kan kun vises i iframe fra samme domene
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    
+    // X-XSS-Protection: Aktiverer nettleserens innebygde XSS-filter
+    // 1; mode=block = blokkerer siden helt hvis et XSS-angrep oppdages
+    context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+    
+    // Referrer-Policy: Kontrollerer hvor mye referrer-informasjon som sendes
+    // strict-origin-when-cross-origin = full URL til samme origin, kun origin til andre
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    
+    // Permissions-Policy: Begrenser tilgang til nettleser-APIer
+    // Deaktiverer kamera, mikrofon, geolokasjon osv. med mindre eksplisitt tillatt
+    context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)");
+    
+    // Content-Security-Policy: Definerer hvilke ressurser som kan lastes
+    // Dette er den viktigste headeren for å forhindre XSS-angrep
+    context.Response.Headers.Append("Content-Security-Policy", 
+        "default-src 'self'; " +                                    // Standard: kun fra eget domene
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' " +        // JavaScript kilder
+            "https://unpkg.com " +                                  // Leaflet.js
+            "https://cdnjs.cloudflare.com " +                       // Leaflet plugins
+            "https://cdn.jsdelivr.net; " +                          // Bootstrap/andre CDN
+        "style-src 'self' 'unsafe-inline' " +                       // CSS kilder
+            "https://unpkg.com " +                                  // Leaflet CSS
+            "https://cdnjs.cloudflare.com " +                       // Leaflet plugins CSS
+            "https://cdn.jsdelivr.net; " +                          // Bootstrap CSS
+        "img-src 'self' data: blob: " +                             // Bilder
+            "https://*.tile.openstreetmap.org " +                   // OpenStreetMap tiles
+            "https://server.arcgisonline.com " +                    // Esri satellite tiles
+            "https://*.arcgisonline.com; " +                        // Esri andre tiles
+        "font-src 'self' " +                                        // Skrifttyper
+            "https://cdn.jsdelivr.net " +                           // Bootstrap Icons
+            "https://cdnjs.cloudflare.com; " +                      // Andre fonter
+        "connect-src 'self'; " +                                    // AJAX/WebSocket
+        "frame-ancestors 'none'; " +                                // Ingen iframe embedding
+        "form-action 'self'; " +                                    // Skjemaer kun til eget domene
+        "base-uri 'self'");                                         // Base URL begrensning
+    
+    // Strict-Transport-Security: Tvinger HTTPS for fremtidige forespørsler
+    // max-age=31536000 = 1 år, includeSubDomains = gjelder også subdomener
+    // Kun aktiver i produksjon (når HTTPS er konfigurert)
+    if (!context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment())
+    {
+        context.Response.Headers.Append("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
+    
+    await next();
+});
+
 app.UseRouting();
 
 // --------------------------------------------------------
