@@ -1,6 +1,8 @@
 # Programmeringsprosjekt (IS-202) – Gruppe 17  
 **Applikasjon:** NRL Hindringsrapportering (Obstacle Reporting)
 
+---
+
 ## 📋 Prosjektoversikt
 
 Dette prosjektet er utviklet som en del av emnet **Programmeringsprosjekt (IS-202)** ved Universitetet i Agder.  
@@ -19,7 +21,7 @@ Løsningen er laget for **NRL-systemet** (Nasjonal registeringsløsning luftfart
 - ✅ **Mobilresponsivt design** med Bootstrap 5
 - ✅ **Docker-deployment** med MariaDB
 - ✅ **HTTP Security Headers** for beskyttelse mot vanlige angrep
-- ✅ **Enhetstester** med xUnit
+- ✅ **Enhetstester** med xUnit (45 tester)
 
 ---
 
@@ -51,29 +53,59 @@ Løsningen er laget for **NRL-systemet** (Nasjonal registeringsløsning luftfart
 
 ---
 
-## 🚀 Drift (Kjøring og Konfigurasjon)
+## 🎬 Demo Video
 
-### **Krav:**
-- Docker Desktop
-- .NET SDK 9.0 (for lokal utvikling)
+Applikasjonens funksjonalitet og brukergrensesnitt er demonstrert i en 3-minutters video:
 
-### **1. Kjøring med Docker (Anbefalt)**
+👉 **[Se demo video på Google Drive](https://drive.google.com/file/d/1NrEQLHCqdT3uF5r6cRronc5qyP4rxH1h/view?usp=sharing)**
+
+Videoen viser:
+- Registrering og innlogging
+- Pilot: Rapportering av hindringer med kart
+- Registerfører: Dashboard og godkjenning
+- Navigasjon gjennom alle sider
+
+---
+
+## 🚀 Drift (Kjøring og Konfigurasjon for Sensorer)
+
+### **Systemkrav:**
+- Docker Desktop (påkrevd)
+- Git (for kloning av repository)
+- .NET SDK 9.0 (kun for lokal utvikling uten Docker)
+
+---
+
+### **1. Kjøring med Docker (Anbefalt for sensorer)**
 
 ```bash
-# Klon repository
+# 1. Klon repository
 git clone https://github.com/fatihisim/IS-202-Programmeringsprosjekt-Gruppe17.git
+
+# 2. Naviger til prosjektmappen
 cd IS-202-Programmeringsprosjekt-Gruppe17
 
-# Start applikasjon og database
+# 3. Naviger til applikasjonsmappen (hvor docker-compose.yml ligger)
+cd IS202.NrlApp
+
+# 4. Start applikasjon og database
 docker-compose up -d
+
+# 5. Vent ca. 30 sekunder for at databasen skal initialiseres
 ```
 
 **Applikasjonen er tilgjengelig på:**  
 👉 **http://localhost:8080**
 
-**Database:**  
-- MariaDB kjører automatisk i container
-- Database opprettes automatisk ved første oppstart
+**For å stoppe applikasjonen:**
+```bash
+docker-compose down
+```
+
+**For å se logger (feilsøking):**
+```bash
+docker-compose logs -f
+```
 
 ---
 
@@ -102,6 +134,103 @@ dotnet test --verbosity normal
 
 # Kjør med code coverage
 dotnet test --collect:"XPlat Code Coverage"
+```
+
+---
+
+## 👤 Brukere
+
+### **Opprette brukere**
+
+Applikasjonen har **ingen forhåndsdefinerte brukere** i databasen. Alle brukere må registrere seg selv via applikasjonen.
+
+**Slik oppretter du en bruker:**
+
+1. Gå til **http://localhost:8080**
+2. Klikk på **"Create an account"** på innloggingssiden
+3. Fyll ut registreringsskjemaet:
+   - **Full Name** (påkrevd)
+   - **Email** (påkrevd, brukes som brukernavn)
+   - **Password** (påkrevd, minimum 6 tegn)
+   - **Confirm Password** (påkrevd, må matche passord)
+   - **Phone** (valgfritt)
+   - **Role**: Velg enten **Pilot** eller **Registerfører** (påkrevd)
+   - **Organization** (valgfritt)
+4. Klikk **"Create Account"**
+5. Du blir automatisk logget inn etter registrering
+
+### **Anbefalt for testing**
+
+For å teste alle funksjonaliteter, opprett minst **to brukere** med forskjellige roller:
+
+| Rolle | Funksjon | Tilgang |
+|-------|----------|---------|
+| **Pilot** | Rapportere hindringer | Report Obstacle, My Reports, All Reports |
+| **Registerfører** | Godkjenne/avvise rapporter | Dashboard, All Reports |
+
+---
+
+## 🧭 Navigasjon og Brukslogikk
+
+### **For Pilot:**
+
+```
+1. Registrer deg → Velg rolle "Pilot"
+2. Logg inn → Kommer til Home-siden
+3. Klikk "Report Obstacle" → Fyll ut skjema + tegn på kart
+4. Send inn rapport → Status blir "Pending"
+5. Klikk "My Reports" → Se egne rapporter og status
+6. Vent på godkjenning fra Registerfører
+```
+
+### **For Registerfører:**
+
+```
+1. Registrer deg → Velg rolle "Registerfører"
+2. Logg inn → Kommer til Home-siden
+3. Klikk "Dashboard" → Se alle rapporter med statistikk
+4. Klikk ✅ for å godkjenne eller ❌ for å avvise
+5. Legg til tilbakemelding (valgfritt)
+6. Pilot ser oppdatert status i "My Reports"
+```
+
+### **Workflow-diagram:**
+
+```
+┌─────────────┐     Rapporterer      ┌─────────────┐
+│    PILOT    │ ──────────────────▶  │   PENDING   │
+└─────────────┘                      └──────┬──────┘
+       │                                    │
+       │ Kan redigere/slette               │
+       │ egen pending rapport              │
+       ▼                                    ▼
+┌─────────────┐               ┌─────────────────────────────┐
+│  REDIGERT   │               │        REGISTERFØRER        │
+│  (PENDING)  │               │     (Dashboard review)      │
+└─────────────┘               │                             │
+                              │  ✅ Godkjenn    ❌ Avvis     │
+                              │  ✏️ Rediger     🗑️ Slett    │
+                              └──────────────┬──────────────┘
+                                             │
+                    ┌────────────────────────┼────────────────────────┐
+                    ▼                        ▼                        ▼
+            ┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+            │  APPROVED ✅ │          │  REJECTED ❌ │          │   SLETTET   │
+            └─────────────┘          └──────┬──────┘          └─────────────┘
+                    │                       │
+                    │                       │ Pilot kan redigere
+                    │                       │ og sende på nytt
+                    │                       ▼
+                    │               ┌─────────────┐
+                    │               │   PENDING   │ (sendt på nytt)
+                    │               └─────────────┘
+                    │
+                    ▼
+            ┌───────────────┐
+            │ Pilot ser     │
+            │ feedback i    │
+            │ "My Reports"  │
+            └───────────────┘
 ```
 
 ---
@@ -141,13 +270,29 @@ Applikasjonen følger **Model-View-Controller (MVC)** arkitekturen med tydelig l
 │   - AspNetUsers (Identity-tabeller)                 │
 │   - Obstacles (hindringer med GeoJSON)              │
 └─────────────────────────────────────────────────────┘
-                    │
-┌───────────────────▼─────────────────────────────────┐
-│            Docker-miljø                             │
-│   - is202nrlapp-web-1 (ASP.NET Core)               │
-│   - is202nrlapp-mariadb-1 (MariaDB)                │
-│   - Docker Compose network                          │
-└─────────────────────────────────────────────────────┘
+```
+
+### **Docker-arkitektur:**
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 DOCKER COMPOSE                       │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│   ┌─────────────────┐      ┌─────────────────┐      │
+│   │   WEB CONTAINER │      │ MARIADB CONTAINER│      │
+│   │                 │      │                 │      │
+│   │  ASP.NET Core   │◀────▶│   nrlappdb      │      │
+│   │  Port: 8080     │      │   Port: 3306    │      │
+│   │                 │      │                 │      │
+│   └────────┬────────┘      └────────┬────────┘      │
+│            │                        │               │
+└────────────┼────────────────────────┼───────────────┘
+             │                        │
+         Port 8080                Port 3307
+             │                        │
+             ▼                        ▼
+    http://localhost:8080    MySQL Workbench (valgfritt)
 ```
 
 ---
@@ -181,17 +326,14 @@ IS-202-Programmeringsprosjekt-Gruppe17/
 │   │   │   ├── List.cshtml            # Offentlig liste over hindringer
 │   │   │   ├── MyReports.cshtml       # Pilotens egne rapporter
 │   │   │   └── Overview.cshtml        # Fullskjerm kartoversikt
-│   │   ├── Shared/
-│   │   │   ├── Error.cshtml           # Feilside
-│   │   │   ├── _Layout.cshtml         # Hovedmal med navigasjon
-│   │   │   ├── _Layout.cshtml.css     # Layout-styling
-│   │   │   └── _ValidationScriptsPartial.cshtml
-│   │   ├── _ViewImports.cshtml
-│   │   └── _ViewStart.cshtml
+│   │   └── Shared/
+│   │       ├── Error.cshtml           # Feilside
+│   │       ├── _Layout.cshtml         # Hovedmal med navigasjon
+│   │       ├── _Layout.cshtml.css     # Layout-styling
+│   │       └── _ValidationScriptsPartial.cshtml
 │   ├── Data/
 │   │   └── AppDbContext.cs            # EF Core DbContext (IdentityDbContext)
 │   ├── Migrations/                    # Database-migrasjoner
-│   ├── Properties/                    # Launch settings
 │   ├── wwwroot/                       # Statiske filer (CSS, JS, images)
 │   ├── Program.cs                     # Konfigurasjon, middleware, security headers
 │   ├── Dockerfile                     # Multi-stage Docker build
@@ -201,11 +343,11 @@ IS-202-Programmeringsprosjekt-Gruppe17/
 │
 ├── IS202.NrlApp.Tests/                # Testprosjekt
 │   ├── Controllers/
-│   │   └── ObstacleControllerTests.cs # Controller enhetstester (12 tester)
+│   │   └── ObstacleControllerTests.cs # Controller enhetstester
 │   ├── Models/
-│   │   └── ObstacleTests.cs           # Model enhetstester (12 tester)
+│   │   └── ObstacleTests.cs           # Model enhetstester
 │   ├── Security/
-│   │   └── SecurityTests.cs           # Sikkerhetstester (9 tester)
+│   │   └── SecurityTests.cs           # Sikkerhetstester
 │   └── IS202.NrlApp.Tests.csproj      # Testprosjekt konfigurasjon
 │
 ├── IS202.NrlApp.sln                   # Solution-fil
@@ -264,7 +406,7 @@ form-action 'self';
 
 ### **Testprosjekt: IS202.NrlApp.Tests**
 
-Prosjektet inneholder et fullstendig xUnit-testprosjekt med følgende testklasser:
+Prosjektet inneholder et fullstendig xUnit-testprosjekt med 45 enhetstester fordelt på tre kategorier:
 
 #### **1. ObstacleTests.cs (Model-tester)**
 
@@ -306,14 +448,14 @@ Prosjektet inneholder et fullstendig xUnit-testprosjekt med følgende testklasse
 
 ---
 
-### **📊 Test Oppsummering**
+### **📊 Test Resultater**
 
 | Kategori | Antall Tester | Status |
 |----------|---------------|--------|
-| **Model-tester** | 15 | ✅ |
-| **Controller-tester** | 12 | ✅ |
-| **Sikkerhetstester** | 18 | ✅ |
-| **TOTALT** | **45 tester** | ✅ |
+| **Model-tester** | 15 | ✅ Passed |
+| **Controller-tester** | 12 | ✅ Passed |
+| **Sikkerhetstester** | 18 | ✅ Passed |
+| **TOTALT** | **45 tester** | ✅ **100% Passed** |
 
 **Kjør testene med:**
 ```bash
@@ -321,22 +463,37 @@ cd IS202.NrlApp.Tests
 dotnet test
 ```
 
+**Forventet output:**
+```
+Passed!  - Failed:     0, Passed:    45, Skipped:     0, Total:    45
+```
+
 ---
 
-## 👥 Brukerroller
+## 👥 Brukerroller og Tilgangskontroll
 
 ### **1. Pilot**
-- ✅ Registrere seg og logge inn
-- ✅ Rapportere hindringer (punkt, linje, polygon, sirkel)
-- ✅ Se egne rapporter (MyReports)
-- ✅ Redigere pending/rejected rapporter
-- ✅ Motta tilbakemelding fra registerførere
+| Funksjon | Tilgang |
+|----------|---------|
+| Registrere seg og logge inn | ✅ |
+| Rapportere hindringer (punkt, linje, polygon, sirkel) | ✅ |
+| Se egne rapporter (My Reports) | ✅ |
+| Redigere egne pending/rejected rapporter | ✅ |
+| Redigere egne godkjente rapporter | ❌ |
+| Motta tilbakemelding fra registerførere | ✅ |
+| Tilgang til Dashboard | ❌ |
+| Godkjenne/avvise rapporter | ❌ |
 
 ### **2. Registerfører (NRL-offiser)**
-- ✅ Dashboard med oversikt over alle rapporter
-- ✅ Godkjenne rapporter med tilbakemelding
-- ✅ Avvise rapporter med tilbakemelding
-- ✅ Redigere alle rapporter
+| Funksjon | Tilgang |
+|----------|---------|
+| Registrere seg og logge inn | ✅ |
+| Dashboard med oversikt over alle rapporter | ✅ |
+| Godkjenne rapporter med tilbakemelding | ✅ |
+| Avvise rapporter med tilbakemelding | ✅ |
+| Redigere alle rapporter (uansett status) | ✅ |
+| Slette alle rapporter | ✅ |
+| Rapportere hindringer | ❌ |
 
 ---
 
@@ -344,23 +501,29 @@ dotnet test
 
 ### **Støttede geometrityper:**
 
-| Type | Beskrivelse | Bruksområde |
-|------|-------------|-------------|
-| **Point** 📍 | Enkelt punkt | Tårn, mast, kran |
-| **LineString** ━ | Linje mellom punkter | Kraftlinjer (cyan farge) |
-| **Polygon** ⬟ | Område/bygning | Bygninger, industriområder |
-| **Circle** ⭕ | Sirkel med radius | Faresoner |
+| Type | Beskrivelse | Bruksområde | Farge på kart |
+|------|-------------|-------------|---------------|
+| **Point** 📍 | Enkelt punkt | Tårn, mast, kran | Markør |
+| **LineString** ━ | Linje mellom punkter | Kraftlinjer | Cyan |
+| **Polygon** ⬟ | Område/bygning | Bygninger, industriområder | Blå |
+| **Circle** ⭕ | Sirkel med radius | Faresoner | Blå |
 
 ### **Kartlag:**
 1. **Grunnlag:** Esri World Imagery (satellittbilder)
 2. **Overlay:** OpenStreetMap etiketter (semi-transparent)
+
+### **Statusfarger på kart:**
+- 🟢 **Grønn:** Approved (godkjent)
+- 🟡 **Gul:** Pending (venter på godkjenning)
+- 🔴 **Rød:** Rejected (avvist)
 
 ---
 
 ## 👥 Bidragsytere
 
 **Gruppe 17 - Universitetet i Agder**  
-**Emne:** IS-202 - Programmeringsprosjekt
+**Emne:** IS-202 - Programmeringsprosjekt  
+**Semester:** Høst 2025
 
 ---
 
