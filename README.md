@@ -527,6 +527,12 @@ Passed!  - Failed:     0, Passed:    45, Skipped:     0, Total:    45
 
 ---
 
+## 🤖 Bruk av KI
+
+I dette prosjektet har vi brukt **Claude (Anthropic)** som hjelpemiddel til feilsøking, kodegenerering og dokumentasjon.
+
+---
+
 ## 📄 Lisens
 
 Dette prosjektet er utviklet som en del av undervisningen ved Universitetet i Agder.
